@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Aztec PFP Wall</title>
+<style>
+  :root{ --accent:#6f6ce8; --border:#e8eaf4; --text:#121428; --muted:#667; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family: ui-sans-serif, system-ui; color:var(--text); background:#fff; }
+  header{ max-width:1100px; margin:20px auto 0; padding:0 16px; }
+  h1{ margin:0 0 6px; color:var(--accent); font-size:46px; line-height:1.05; }
+  .sub{ color:var(--muted); font-weight:600; }
+
+  .wrap{ max-width:1100px; margin:18px auto; padding:0 16px; }
+  .panel{ border:1px solid var(--border); border-radius:14px; padding:14px; }
+
+  /* Controls */
+  .controls{ display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:center; }
+  .controls input, .controls button{
+    height:54px; border-radius:12px; border:1px solid var(--border);
+    padding:0 14px; font-size:16px; background:#f6f7fe;
+  }
+  .controls .short{ width:220px; }
+  @media (max-width:640px){
+    .controls{ grid-template-columns: 1fr; }
+    .controls .short{ width:100%; }
+  }
+
+  /* Grid */
+  #grid{ display:grid; gap:16px; grid-template-columns:repeat(1,minmax(0,1fr)); }
+  @media (min-width:600px){ #grid{ grid-template-columns:repeat(2,1fr);} }
+  @media (min-width:900px){ #grid{ grid-template-columns:repeat(3,1fr);} }
+  @media (min-width:1280px){ #grid{ grid-template-columns:repeat(4,1fr);} }
+
+  .card{ border:1px solid var(--border); border-radius:16px; overflow:hidden; background:#fff;
+         box-shadow:0 8px 24px rgba(18,26,66,.06); transition:transform .15s; }
+  .card:hover{ transform: translateY(-3px); }
+  .pfp{ height:220px; background:#fff; }
+  .pfp img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .body{ padding:12px; }
+  .name{ font-weight:900; font-size:18px; }
+  .links{ margin-top:6px; display:flex; gap:10px; flex-wrap:wrap; }
+  .links a{ color:#2b2f6f; text-decoration:none; background:#eef1ff; border:1px solid var(--border);
+            padding:6px 10px; border-radius:10px; font-weight:800; font-size:14px;}
+  .note{ color:#a66; margin-top:8px; font-size:14px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Aztec PFP Wall</h1>
+  <div class="sub">Submit your X handle. We’ll fetch your avatar and add you instantly.</div>
+</header>
+
+<div class="wrap panel">
+  <form id="form" class="controls">
+    <input id="handle" type="text" placeholder="@handle" required />
+    <input id="website" type="url" class="short" placeholder="your.site (optional)" />
+    <button id="submitBtn" type="submit">Submit</button>
+  </form>
+  <div class="note" id="msg"></div>
+</div>
+
+<div class="wrap">
+  <div id="grid"></div>
+</div>
+
+<script>
+async function fetchList(){
+  const r = await fetch('/api/list', { cache:'no-store' });
+  return r.ok ? r.json() : [];
+}
+function cardHtml(p){
+  const web = p.website ? `<a href="${p.website}" target="_blank" rel="noopener">Website</a>` : "";
+  return `
+  <article class="card">
+    <div class="pfp"><img src="${p.pfp_url}" alt="@${p.handle}"></div>
+    <div class="body">
+      <div class="name">@${p.handle}</div>
+      <div class="links">
+        <a href="${p.twitter_url}" target="_blank" rel="noopener">X Profile</a>
+        ${web}
+      </div>
+    </div>
+  </article>`;
+}
+async function renderGrid(){
+  const list = await fetchList();
+  document.querySelector('#grid').innerHTML = list.map(cardHtml).join('');
+}
+async function submitForm(e){
+  e.preventDefault();
+  const msg = document.getElementById('msg');
+  const btn = document.getElementById('submitBtn');
+  const handle = document.getElementById('handle').value.trim();
+  const website = document.getElementById('website').value.trim();
+
+  btn.disabled = true; btn.textContent = 'Submitting…'; msg.textContent = '';
+  try{
+    const r = await fetch('/api/submit', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ handle, website })
+    });
+    const j = await r.json();
+    if(!r.ok || !j.ok){ msg.textContent = j.error || 'Failed to submit'; }
+    else { msg.textContent = 'Added!'; document.getElementById('form').reset(); renderGrid(); }
+  }catch(err){ msg.textContent = 'Network error'; }
+  finally{ btn.disabled = false; btn.textContent = 'Submit'; }
+}
+document.getElementById('form').addEventListener('submit', submitForm);
+renderGrid();
+</script>
+</body>
+</html>
