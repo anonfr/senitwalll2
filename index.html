@@ -5,64 +5,64 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Aztec PFP Wall</title>
 <style>
-  :root{ --accent:#6f6ce8; --border:#e8eaf4; --text:#121428; --muted:#667; }
+  :root{ --accent:#6f6ce8; --border:#e8eaf4; --text:#121428; --muted:#667; --bg:#fff; }
   *{ box-sizing:border-box; }
-  body{ margin:0; font-family: ui-sans-serif, system-ui; color:var(--text); background:#fff; }
+  body{ margin:0; font-family: ui-sans-serif, system-ui; color:var(--text); background:var(--bg); }
   header{ max-width:1100px; margin:20px auto 0; padding:0 16px; }
-  h1{ margin:0 0 6px; color:var(--accent); font-size:46px; line-height:1.05; }
+  h1{ margin:0 0 6px; color:var(--accent); font-size:40px; line-height:1.1; }
   .sub{ color:var(--muted); font-weight:600; }
 
-  .wrap{ max-width:1100px; margin:18px auto; padding:0 16px; }
-  .panel{ border:1px solid var(--border); border-radius:14px; padding:14px; }
+  .wrap{ max-width:1100px; margin:16px auto; padding:0 16px; }
+  .panel{ border:1px solid var(--border); border-radius:14px; padding:12px; }
 
-  /* Controls */
+  /* Controls: only the handle + submit now */
   .controls{ display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:center; }
   .controls input, .controls button{
-    height:54px; border-radius:12px; border:1px solid var(--border);
+    height:48px; border-radius:12px; border:1px solid var(--border);
     padding:0 14px; font-size:16px; background:#f6f7fe;
   }
-  .controls .short{ width:220px; }
-  @media (max-width:640px){
-    .controls{ grid-template-columns: 1fr; }
-    .controls .short{ width:100%; }
-  }
+  @media (max-width:640px){ .controls{ grid-template-columns: 1fr; } }
 
-  /* Grid */
-  #grid{ display:grid; gap:16px; grid-template-columns:repeat(1,minmax(0,1fr)); }
-  @media (min-width:600px){ #grid{ grid-template-columns:repeat(2,1fr);} }
-  @media (min-width:900px){ #grid{ grid-template-columns:repeat(3,1fr);} }
-  @media (min-width:1280px){ #grid{ grid-template-columns:repeat(4,1fr);} }
+  /* Floating canvas */
+  .canvas { position: relative; height: calc(100vh - 220px); border:1px dashed #eef;
+            border-radius:16px; overflow:hidden; background:radial-gradient(1200px 600px at 30% -10%, #f7f7ff, transparent); }
+  .hint { color:var(--muted); font-size:13px; margin:8px 0 0 4px; }
 
-  .card{ border:1px solid var(--border); border-radius:16px; overflow:hidden; background:#fff;
-         box-shadow:0 8px 24px rgba(18,26,66,.06); transition:transform .15s; }
-  .card:hover{ transform: translateY(-3px); }
-  .pfp{ height:220px; background:#fff; }
+  /* Card (smaller), PFP fills fully */
+  .card{ position:absolute; width:160px; height:200px; border:1px solid var(--border);
+         border-radius:16px; overflow:hidden; background:#fff; box-shadow:0 8px 22px rgba(18,26,66,.08);
+         will-change: transform; animation: float 7s ease-in-out infinite; }
+  .pfp{ height:140px; background:#fff; }
   .pfp img{ width:100%; height:100%; object-fit:cover; display:block; }
-  .body{ padding:12px; }
-  .name{ font-weight:900; font-size:18px; }
-  .links{ margin-top:6px; display:flex; gap:10px; flex-wrap:wrap; }
-  .links a{ color:#2b2f6f; text-decoration:none; background:#eef1ff; border:1px solid var(--border);
-            padding:6px 10px; border-radius:10px; font-weight:800; font-size:14px;}
-  .note{ color:#a66; margin-top:8px; font-size:14px; }
+  .body{ padding:8px 10px; }
+  .name{ font-weight:900; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .link{ display:inline-block; margin-top:4px; font-size:12px; font-weight:800; color:#2b2f6f; text-decoration:none;
+         background:#eef1ff; border:1px solid var(--border); padding:4px 8px; border-radius:10px; }
+
+  @keyframes float {
+    0%   { transform: translate3d(0,0,0) }
+    50%  { transform: translate3d(var(--dx, 8px), var(--dy, -10px), 0) }
+    100% { transform: translate3d(0,0,0) }
+  }
 </style>
 </head>
 <body>
 <header>
   <h1>Aztec PFP Wall</h1>
-  <div class="sub">Submit your X handle. We’ll fetch your avatar and add you instantly.</div>
+  <div class="sub">Drop your X handle. Your avatar shows instantly. Cards float around 😎</div>
 </header>
 
 <div class="wrap panel">
   <form id="form" class="controls">
     <input id="handle" type="text" placeholder="@handle" required />
-    <input id="website" type="url" class="short" placeholder="your.site (optional)" />
     <button id="submitBtn" type="submit">Submit</button>
   </form>
-  <div class="note" id="msg"></div>
+  <div class="hint" id="msg"></div>
 </div>
 
 <div class="wrap">
-  <div id="grid"></div>
+  <div id="canvas" class="canvas"></div>
+  <div class="hint">Tip: cards are placed randomly and gently drift. Resize to reshuffle.</div>
 </div>
 
 <script>
@@ -70,46 +70,78 @@ async function fetchList(){
   const r = await fetch('/api/list', { cache:'no-store' });
   return r.ok ? r.json() : [];
 }
-function cardHtml(p){
-  const web = p.website ? `<a href="${p.website}" target="_blank" rel="noopener">Website</a>` : "";
+
+function cardHtml(p, left, top, dx, dy, delay){
   return `
-  <article class="card">
+  <article class="card" style="left:${left}px; top:${top}px; --dx:${dx}px; --dy:${dy}px; animation-delay:${delay}s">
     <div class="pfp"><img src="${p.pfp_url}" alt="@${p.handle}"></div>
     <div class="body">
       <div class="name">@${p.handle}</div>
-      <div class="links">
-        <a href="${p.twitter_url}" target="_blank" rel="noopener">X Profile</a>
-        ${web}
-      </div>
+      <a class="link" href="${p.twitter_url}" target="_blank" rel="noopener">Profile</a>
     </div>
   </article>`;
 }
-async function renderGrid(){
-  const list = await fetchList();
-  document.querySelector('#grid').innerHTML = list.map(cardHtml).join('');
+
+/* simple scatter layout inside the canvas */
+function layoutCards(items){
+  const canvas = document.getElementById('canvas');
+  const W = canvas.clientWidth, H = canvas.clientHeight;
+  const cw = 160, ch = 200, pad = 14;
+
+  // compute a coarse grid so cards don't collide
+  const cols = Math.max(1, Math.floor((W - pad) / (cw + pad)));
+  const rows = Math.max(1, Math.floor((H - pad) / (ch + pad)));
+  const spots = [];
+  for(let r=0; r<rows; r++){
+    for(let c=0; c<cols; c++){
+      const x = pad + c*(cw+pad);
+      const y = pad + r*(ch+pad);
+      spots.push([x,y]);
+    }
+  }
+
+  // randomly assign spots to the first N cards
+  const order = spots.sort(() => Math.random()-0.5);
+  const n = Math.min(items.length, order.length);
+  let html = '';
+  for(let i=0;i<n;i++){
+    const [left, top] = order[i];
+    const dx = (Math.random()*16 - 8);  // -8..8
+    const dy = (Math.random()*22 - 11); // -11..11
+    const delay = +(Math.random()*4).toFixed(2);
+    html += cardHtml(items[i], left, top, dx, dy, delay);
+  }
+  canvas.innerHTML = html;
 }
+
+async function render(){
+  const items = await fetchList();
+  layoutCards(items);
+}
+
 async function submitForm(e){
   e.preventDefault();
   const msg = document.getElementById('msg');
   const btn = document.getElementById('submitBtn');
   const handle = document.getElementById('handle').value.trim();
-  const website = document.getElementById('website').value.trim();
 
   btn.disabled = true; btn.textContent = 'Submitting…'; msg.textContent = '';
   try{
     const r = await fetch('/api/submit', {
       method:'POST',
       headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({ handle, website })
+      body: JSON.stringify({ handle })
     });
     const j = await r.json();
     if(!r.ok || !j.ok){ msg.textContent = j.error || 'Failed to submit'; }
-    else { msg.textContent = 'Added!'; document.getElementById('form').reset(); renderGrid(); }
+    else { msg.textContent = 'Added!'; document.getElementById('form').reset(); render(); }
   }catch(err){ msg.textContent = 'Network error'; }
   finally{ btn.disabled = false; btn.textContent = 'Submit'; }
 }
+
 document.getElementById('form').addEventListener('submit', submitForm);
-renderGrid();
+window.addEventListener('resize', render);
+render();
 </script>
 </body>
 </html>
