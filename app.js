@@ -121,25 +121,21 @@
 
     render();
 
-    const music = document.getElementById('bgMusic');
-const toggleBtn = document.getElementById('musicToggle');
 
-toggleBtn.addEventListener('click', () => {
-  if (music.paused) {
-    music.play();
-    toggleBtn.textContent = '🔇 Mute Music';
-  } else {
-    music.pause();
-    toggleBtn.textContent = '🔊 Play Music';
-  }
-});
+  const music = document.getElementById('bgMusic');
+  const toggle = document.getElementById('musicToggle');
 
-// Optional: autoplay muted on load, then unmute if user clicks
-document.addEventListener('DOMContentLoaded', () => {
-  music.volume = 0.4; // softer volume
-  music.play().catch(() => {
-    // Browser blocked autoplay — wait for user click
+  toggle.addEventListener('click', () => {
+    if (music.paused) {
+      music.play();
+      toggle.classList.add('playing');
+      toggle.querySelector('.label').textContent = 'Pause Music';
+    } else {
+      music.pause();
+      toggle.classList.remove('playing');
+      toggle.querySelector('.label').textContent = 'Play Music';
+    }
   });
-});
+
 
 
