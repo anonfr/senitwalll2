@@ -1,0 +1,87 @@
+:root{
+  --bg:#0b0f16; --ink:#e9ecff; --muted:#b7c0e3;
+  --accent:#6f6ce8; --accent-2:#9a97ff; --border:#1d2340;
+  --shadow:0 8px 22px rgba(0,0,0,.35);
+}
+
+*{ box-sizing:border-box }
+html,body{ height:100% }
+body{
+  margin:0; font-family: ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial;
+  background:radial-gradient(1200px 800px at 10% -20%, #132242 0%, #0b0f16 45%) no-repeat, var(--bg);
+  color:var(--ink);
+}
+
+/* Layout */
+.wrap{ max-width:1200px; margin:28px auto 80px; padding:0 16px }
+h1{ margin:0 0 6px; font-size:40px; font-weight:900; letter-spacing:.2px }
+.lead{ margin:0 0 16px; color:var(--muted) }
+
+/* Form */
+.controls{ display:flex; gap:10px; align-items:center; margin:12px 0 6px }
+.controls input{
+  flex:1; padding:12px 14px; border-radius:12px; outline:none;
+  background:#0e1430; color:var(--ink);
+  border:1px solid var(--border); font-size:15px;
+}
+.controls button{
+  padding:11px 16px; border-radius:12px; cursor:pointer; border:1px solid transparent;
+  background:linear-gradient(180deg, var(--accent), var(--accent-2));
+  color:white; font-weight:800; letter-spacing:.2px; transition:transform .15s ease, filter .15s ease;
+}
+.controls button:hover{ filter:brightness(1.06); transform:translateY(-1px) }
+.msg{ min-height:18px; font-size:13px; color:#f4d47c; margin:4px 2px }
+
+/* Compact grid so many cards fit at once */
+.grid{
+  display:grid; gap:10px; margin-top:10px;
+  grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+}
+
+/* Card */
+.card{
+  display:block; text-decoration:none; color:inherit;
+  background:linear-gradient(180deg, #11172d, #0c1226);
+  border:1px solid var(--border); border-radius:12px; overflow:hidden;
+  box-shadow:var(--shadow); transition:transform .12s ease, box-shadow .12s ease, border-color .12s;
+
+  /* Floating drift defaults; per-card vars will override */
+  animation: drift var(--dur, 9s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+.card:hover{ transform:translateY(-2px); border-color:#243059; box-shadow:0 12px 26px rgba(17,22,38,.6) }
+
+/* Image */
+.pfp{ width:100%; aspect-ratio:1/1; background:#0c1226; overflow:hidden }
+.pfp img{ width:100%; height:100%; object-fit:cover; display:block }
+
+/* Caption */
+.caption{ padding:6px 8px; background:#0b1124 }
+.handle{
+  display:block; font-weight:900; padding:4px 6px; background:#0f1a39; border:1px solid #1d2952;
+  border-radius:8px; color:#dbe0ff; max-width:100%;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:12px;
+}
+
+/* Floating drift: per-card translation + tiny rotation wobble */
+@keyframes drift {
+  0%   { transform: translate3d(0,0,0) rotate(var(--r0, 0deg)); }
+  50%  { transform: translate3d(var(--dx, 8px), var(--dy, -10px), 0) rotate(var(--r1, 0.8deg)); }
+  100% { transform: translate3d(0,0,0) rotate(var(--r0, 0deg)); }
+}
+
+/* Pause drift on hover (desktop) */
+.card:hover { animation-play-state: paused; }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .card { animation: none !important; }
+}
+
+/* Footer badge centered bottom */
+.credit{
+  position:fixed; left:50%; transform:translateX(-50%);
+  bottom:12px; background:#101632; color:#cfd6ff;
+  border:1px solid #22305d; padding:7px 10px; border-radius:999px; font-size:12px; font-weight:800;
+  text-decoration:none; box-shadow:0 6px 18px rgba(0,0,0,.35)
+}
