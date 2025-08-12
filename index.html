@@ -54,6 +54,25 @@
       border:1px solid var(--border); border-radius:12px; overflow:hidden;
       box-shadow:var(--shadow); transition:transform .12s ease, box-shadow .12s ease, border-color .12s;
     }
+    /* Floating drift */
+@keyframes drift {
+  0%   { transform: translate3d(0,0,0) }
+  50%  { transform: translate3d(var(--dx, 6px), var(--dy, -8px), 0) }
+  100% { transform: translate3d(0,0,0) }
+}
+
+/* Make each card drift; pause on hover (desktop) */
+.card {
+  animation: drift var(--dur, 9s) ease-in-out infinite;
+}
+.card:hover {
+  animation-play-state: paused;
+}
+
+/* Respect user’s reduced-motion setting */
+@media (prefers-reduced-motion: reduce) {
+  .card { animation: none !important; }
+}
     .card:hover{ transform:translateY(-2px); border-color:#243059; box-shadow:0 12px 26px rgba(17,22,38,.6) }
 
     .pfp{width:100%; aspect-ratio:1/1; background:#0c1226; overflow:hidden}
@@ -145,6 +164,33 @@
         // randomize slightly then rotate so the first row changes each refresh
         data = rotate(shuffle(data));
         wall.innerHTML = data.map(card).join('');
+        async function render(){
+    msg.textContent = '';
+    try {
+      let data = await fetchList();
+      if (!Array.isArray(data) || !data.length){
+        wall.innerHTML = '<div style="color:#9aa4d6">No cards yet. Be the first!</div>';
+        return;
+      }
+      data = rotate(shuffle(data));
+      wall.innerHTML = data.map(card).join('');
+
+      // NEW: give each card its own drift path/timing
+      const cards = wall.querySelectorAll('.card');
+      cards.forEach((el, i) => {
+        const dx = (Math.random() * 12 - 6).toFixed(1);  // -6..6px
+        const dy = (Math.random() * 16 - 8).toFixed(1);  // -8..8px
+        const dur = (8 + Math.random() * 5).toFixed(2);  // 8..13s
+        const delay = (Math.random() * 3).toFixed(2);    // 0..3s
+        el.style.setProperty('--dx', `${dx}px`);
+        el.style.setProperty('--dy', `${dy}px`);
+        el.style.setProperty('--dur', `${dur}s`);
+        el.style.animationDelay = `${delay}s`;
+      });
+    } catch(e){
+      msg.textContent = 'Failed to load. Refresh to try again.';
+    }
+  }
       } catch(e){
         msg.textContent = 'Failed to load. Refresh to try again.';
       }
