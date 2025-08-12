@@ -9,23 +9,20 @@
       return r.json();
     }
 
-function cardNode(item){
-  const url = item.twitter_url || `https://twitter.com/${item.handle}`;
-  const handle = item.handle ? '@' + item.handle : '';
-  const pfp = item.handle ? `https://unavatar.io/twitter/${encodeURIComponent(item.handle)}` : '';
+    function cardNode(item){
+      const url = item.twitter_url || `https://twitter.com/${item.handle}`;
+      const pfp = item.pfp_url || '';
+      const handle = item.handle ? '@'+item.handle : '';
 
-  const a = document.createElement('a');
-  a.className = 'card';
-  a.href = url; a.target = '_blank'; a.rel = 'noopener';
-  a.innerHTML = `
-    <div class="pfp">
-      <img src="${pfp}" alt="${handle}'s avatar" loading="lazy"
-           onerror="this.style.display='none'; this.closest('.pfp').classList.add('no-pfp')">
-    </div>
-    <div class="caption"><span class="handle">${handle}</span></div>
-  `;
-  return a;
-}
+      const a = document.createElement('a');
+      a.className = 'card';
+      a.href = url; a.target = '_blank'; a.rel = 'noopener';
+      a.innerHTML = `
+        <div class="pfp"><img src="${pfp}" alt="${handle}'s avatar" loading="lazy"></div>
+        <div class="caption"><span class="handle">${handle}</span></div>
+      `;
+      return a;
+    }
 
 
     function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
@@ -124,22 +121,24 @@ function cardNode(item){
 
     render();
 
+    const music = document.getElementById('bgMusic');
+const toggleBtn = document.getElementById('musicToggle');
 
-  const music = document.getElementById('bgMusic');
-  const toggle = document.getElementById('musicToggle');
+toggleBtn.addEventListener('click', () => {
+  if (music.paused) {
+    music.play();
+    toggleBtn.textContent = '🔇 Mute Music';
+  } else {
+    music.pause();
+    toggleBtn.textContent = '🔊 Play Music';
+  }
+});
 
-  toggle.addEventListener('click', () => {
-    if (music.paused) {
-      music.play();
-      toggle.classList.add('playing');
-      toggle.querySelector('.label').textContent = 'Pause Music';
-    } else {
-      music.pause();
-      toggle.classList.remove('playing');
-      toggle.querySelector('.label').textContent = 'Play Music';
-    }
+// Optional: autoplay muted on load, then unmute if user clicks
+document.addEventListener('DOMContentLoaded', () => {
+  music.volume = 0.4; // softer volume
+  music.play().catch(() => {
+    // Browser blocked autoplay — wait for user click
   });
-
-  
-
+});
 
