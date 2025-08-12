@@ -10,64 +10,67 @@
 
   <style>
     :root{
-      --bg:#0b0f16; --panel:#111626; --ink:#e9ecff; --muted:#b7c0e3;
+      --bg:#0b0f16; --ink:#e9ecff; --muted:#b7c0e3;
       --accent:#6f6ce8; --accent-2:#9a97ff; --border:#1d2340;
-      --chip:#151b31; --card:#0f1424; --shadow:0 12px 30px rgba(0,0,0,.35);
+      --shadow:0 8px 22px rgba(0,0,0,.35);
     }
     *{box-sizing:border-box}
     html,body{height:100%}
-    body{margin:0; font-family: ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial;
-         background:radial-gradient(1200px 800px at 10% -20%, #132242 0%, #0b0f16 45%) no-repeat, var(--bg);
-         color:var(--ink)}
+    body{
+      margin:0; font-family: ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial;
+      background:radial-gradient(1200px 800px at 10% -20%, #132242 0%, #0b0f16 45%) no-repeat, var(--bg);
+      color:var(--ink)
+    }
 
-    .wrap{max-width:1100px; margin:28px auto 80px; padding:0 16px}
-    h1{margin:0 0 6px; font-size:42px; font-weight:900; letter-spacing:.2px}
+    .wrap{max-width:1200px; margin:28px auto 80px; padding:0 16px}
+    h1{margin:0 0 6px; font-size:40px; font-weight:900; letter-spacing:.2px}
     .lead{margin:0 0 16px; color:var(--muted)}
 
-    .controls{display:flex; gap:12px; align-items:center; margin:14px 0 6px}
+    /* Form */
+    .controls{display:flex; gap:10px; align-items:center; margin:12px 0 6px}
     .controls input{
-      flex:1; padding:14px 16px; border-radius:14px; outline:none;
+      flex:1; padding:12px 14px; border-radius:12px; outline:none;
       background:#0e1430; color:var(--ink);
-      border:1px solid var(--border); font-size:16px;
+      border:1px solid var(--border); font-size:15px;
     }
     .controls button{
-      padding:13px 18px; border-radius:12px; cursor:pointer; border:1px solid transparent;
+      padding:11px 16px; border-radius:12px; cursor:pointer; border:1px solid transparent;
       background:linear-gradient(180deg, var(--accent), var(--accent-2));
       color:white; font-weight:800; letter-spacing:.2px; transition:transform .15s ease, filter .15s ease;
     }
-    .controls button:hover{ filter:brightness(1.05); transform:translateY(-1px) }
-    .msg{min-height:20px; font-size:14px; color:#f4d47c; margin:6px 2px}
+    .controls button:hover{ filter:brightness(1.06); transform:translateY(-1px) }
+    .msg{min-height:18px; font-size:13px; color:#f4d47c; margin:4px 2px}
 
-    /* Grid & card */
-    .grid{display:grid; gap:18px; margin-top:10px}
-    /* 1 col small, 2 cols mid, 3 cols tablet, 4 cols desktop */
-    .grid{grid-template-columns:repeat(2, minmax(0, 1fr))}
-    @media (min-width:600px){ .grid{grid-template-columns:repeat(3, minmax(0, 1fr))} }
-    @media (min-width:900px){ .grid{grid-template-columns:repeat(4, minmax(0, 1fr))} }
+    /* Ultra‑compact grid so many cards fit on one screen */
+    .grid{
+      display:grid; gap:10px; margin-top:10px;
+      grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)); /* <- smaller min width */
+    }
 
+    /* Card — tiny, square image, compact caption */
     .card{
       display:block; text-decoration:none; color:inherit;
-      background:linear-gradient(180deg, #121a31, #0c1226);
-      border:1px solid var(--border); border-radius:18px; overflow:hidden;
-      box-shadow:var(--shadow); transition:transform .14s ease, box-shadow .14s ease, border-color .14s;
+      background:linear-gradient(180deg, #11172d, #0c1226);
+      border:1px solid var(--border); border-radius:12px; overflow:hidden;
+      box-shadow:var(--shadow); transition:transform .12s ease, box-shadow .12s ease, border-color .12s;
     }
-    .card:hover{ transform:translateY(-3px); border-color:#243059; box-shadow:0 16px 40px rgba(17,22,38,.6) }
+    .card:hover{ transform:translateY(-2px); border-color:#243059; box-shadow:0 12px 26px rgba(17,22,38,.6) }
 
-    .pfp{position:relative; width:100%; aspect-ratio:1/1; overflow:hidden; background:#0c1226}
+    .pfp{width:100%; aspect-ratio:1/1; background:#0c1226; overflow:hidden}
     .pfp img{width:100%; height:100%; object-fit:cover; display:block}
 
-    .caption{display:flex; align-items:center; gap:8px; padding:10px 12px; background:#0b1124}
+    .caption{padding:6px 8px; background:#0b1124}
     .handle{
-      font-weight:900; padding:6px 10px; background:#0f1a39; border:1px solid #1d2952;
-      border-radius:10px; color:#dbe0ff; max-width:100%;
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:14px;
+      display:block; font-weight:900; padding:4px 6px; background:#0f1a39; border:1px solid #1d2952;
+      border-radius:8px; color:#dbe0ff; max-width:100%;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:12px; /* smaller text */
     }
 
     /* Footer badge centered bottom */
     .credit{
       position:fixed; left:50%; transform:translateX(-50%);
-      bottom:14px; background:#101632; color:#cfd6ff;
-      border:1px solid #22305d; padding:8px 12px; border-radius:999px; font-size:13px; font-weight:800;
+      bottom:12px; background:#101632; color:#cfd6ff;
+      border:1px solid #22305d; padding:7px 10px; border-radius:999px; font-size:12px; font-weight:800;
       text-decoration:none; box-shadow:0 6px 18px rgba(0,0,0,.35)
     }
   </style>
@@ -75,7 +78,7 @@
 <body>
   <div class="wrap">
     <h1>Aztec PFP Wall</h1>
-    <p class="lead">Drop your X handle. Your avatar shows instantly. Pinch‑zoom the page if you want bigger cards.</p>
+    <p class="lead">Submit your X handle. Cards are compact so you can see a broad view at once. Pinch‑zoom if you like.</p>
 
     <form id="form" class="controls">
       <input id="handle" type="text" inputmode="text" autocomplete="off" placeholder="@handle" required />
@@ -111,16 +114,36 @@
       `;
     }
 
+    // Fisher–Yates shuffle
+    function shuffle(arr){
+      for(let i=arr.length-1; i>0; i--){
+        const j = Math.floor(Math.random() * (i+1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    // Rotate placement across refreshes:
+    // we keep an offset in sessionStorage and rotate the array by that amount each render.
+    function rotate(arr){
+      if(!arr.length) return arr;
+      const key = 'aztec_pfp_wall_rot';
+      const prev = parseInt(sessionStorage.getItem(key) || '0', 10) || 0;
+      const off = (prev + 3) % arr.length; // rotate by +3 each load (feel free to change)
+      sessionStorage.setItem(key, String(off));
+      return arr.slice(off).concat(arr.slice(0, off));
+    }
+
     async function render(){
       msg.textContent = '';
       try {
-        const data = await fetchList();
+        let data = await fetchList();
         if (!Array.isArray(data) || !data.length){
           wall.innerHTML = '<div style="color:#9aa4d6">No cards yet. Be the first!</div>';
           return;
         }
-        // newest first
-        data.sort((a,b)=> (b.created_at||0) - (a.created_at||0));
+        // randomize slightly then rotate so the first row changes each refresh
+        data = rotate(shuffle(data));
         wall.innerHTML = data.map(card).join('');
       } catch(e){
         msg.textContent = 'Failed to load. Refresh to try again.';
@@ -146,6 +169,8 @@
         } else {
           document.getElementById('form').reset();
           await render();
+          // Scroll back to top so the user sees their card added in context
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       } catch (err){
         msg.textContent = 'Network error';
