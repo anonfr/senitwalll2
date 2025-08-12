@@ -16,7 +16,7 @@
     *{box-sizing:border-box}
 
    
-  html, body {
+    html, body {
   height: 100%;
   margin: 0;
   color: var(--ink);
@@ -79,7 +79,7 @@
   
     .card{
       position:absolute; display:block; width:118px; border-radius:14px; text-decoration:none; color:#e9ecff;
-      background:linear-gradient(180deg, #11172d, #0c1226);
+      background-color: #11172d !important;
       border:1px solid var(--border); overflow:hidden; box-shadow:var(--shadow);
       will-change: transform;
     }
