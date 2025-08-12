@@ -120,3 +120,24 @@
     });
 
     render();
+
+    const music = document.getElementById('bgMusic');
+const toggleBtn = document.getElementById('musicToggle');
+
+toggleBtn.addEventListener('click', () => {
+  if (music.paused) {
+    music.play();
+    toggleBtn.textContent = '🔇 Mute Music';
+  } else {
+    music.pause();
+    toggleBtn.textContent = '🔊 Play Music';
+  }
+});
+
+// Optional: autoplay muted on load, then unmute if user clicks
+document.addEventListener('DOMContentLoaded', () => {
+  music.volume = 0.4; // softer volume
+  music.play().catch(() => {
+    // Browser blocked autoplay — wait for user click
+  });
+});
