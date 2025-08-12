@@ -55,7 +55,7 @@
         cards.forEach((el) => {
           const dx = (Math.random() * 80 - 40).toFixed(1); // -12..12px
           const dy = (Math.random() * 80 - 40).toFixed(1); // -12..12px
-          const dur = (3 + Math.random() * 4).toFixed(2);  // 7..14s
+          const dur = (1 + Math.random() * 3).toFixed(2);  // 7..14s
           const delay = (Math.random() * 4).toFixed(2);    // 0..4s
           el.style.setProperty('--dx', `${dx}px`);
           el.style.setProperty('--dy', `${dy}px`);
