@@ -28,14 +28,31 @@ html, body{
   /* NOTE: no animation/filter on body so children don’t color‑shift */
 }
 
-.wrap{ max-width:1200px; margin:28px auto 100px; padding:0 16px }
-
-/* Headings (fixed brand color) */
-h1{
-  margin:0 0 6px; font-size:42px; font-weight:900; letter-spacing:.2px; color:var(--aztec);
+/* Center the heading + subtext */
+.wrap {
+  max-width: 1200px;
+  margin: 28px auto 100px;
+  padding: 0 16px;
+  text-align: center; /* Center everything inside wrap */
 }
-.lead{
-  margin:0 0 18px; color:var(--aztec); opacity:.85; font-weight:600;
+
+/* Eye-catching title */
+h1 {
+  margin: 0 0 10px;
+  font-size: 54px; /* Bigger */
+  font-weight: 900;
+  letter-spacing: .3px;
+  background: linear-gradient(90deg, #8e2de2, #4a00e0); /* Purple gradient */
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Subtitle under title */
+.lead {
+  margin: 0 0 25px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #cfd6ff; /* Softer but still visible */
 }
 
 /* Controls */
