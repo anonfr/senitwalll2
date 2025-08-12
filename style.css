@@ -1,80 +1,96 @@
-
     :root{
-      --bg:#0b0f16; --ink:#e9ecff; --muted:#b7c0e3;
-      --accent:#6f6ce8; --accent-2:#9a97ff; --border:#1d2340;
-      --shadow:0 10px 26px rgba(0,0,0,.35);
-      --card-w:110px;
-      --card-h:140px;
+      
+      --aztec:#6f6ce8;           
+      --ink:#0f1330;
+      --muted:#636e95;
+
+     
+      --stage-0:#0b0f16;
+      --stage-1:#132242;
+      --stage-2:#1a2450;
+
+    
+      --border:#1d2340;
+      --shadow:0 8px 22px rgba(0,0,0,.35);
     }
     *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0; font-family: ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial;
-      background: radial-gradient(1200px 800px at 10% -20%, #132242 0%, #0b0f16 45%) no-repeat, var(--bg);
-      color:var(--ink); overflow-x:hidden;
-    }
-    .wrap{max-width:1200px; margin:20px auto 12px; padding:0 16px}
-    h1{margin:0 0 4px; font-size:38px; font-weight:900; letter-spacing:.2px}
-    .lead{margin:0 0 12px; color:var(--muted)}
 
-    .controls{display:flex; gap:10px; align-items:center; margin:10px 0 4px}
+   
+    html,body{height:100%}
+    body{ margin:0; background:#ffffff; color:var(--ink); font-family: ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial }
+
+    .wrap{ max-width:1200px; margin:28px auto 100px; padding:0 16px }
+
+   
+    h1{ margin:0 0 6px; font-size:42px; font-weight:900; letter-spacing:.2px; color:var(--aztec) }
+    .lead{ margin:0 0 18px; color:var(--aztec); opacity:.85; font-weight:600 }
+
+  
+    .controls{display:flex; gap:10px; align-items:center; margin:12px 0 10px}
     .controls input{
       flex:1; padding:12px 14px; border-radius:12px; outline:none;
-      background:#0e1430; color:var(--ink);
-      border:1px solid var(--border); font-size:15px;
+      background:#f3f4fb; color:var(--ink);
+      border:1px solid #e6e8f3; font-size:15px;
     }
     .controls button{
       padding:11px 16px; border-radius:12px; cursor:pointer; border:1px solid transparent;
-      background:linear-gradient(180deg, var(--accent), var(--accent-2));
+      background:linear-gradient(180deg, #7c79ff, var(--aztec));
       color:white; font-weight:800; letter-spacing:.2px; transition:transform .15s ease, filter .15s ease;
+      box-shadow:0 8px 18px rgba(111,108,232,.25);
     }
     .controls button:hover{ filter:brightness(1.06); transform:translateY(-1px) }
-    .msg{min-height:18px; font-size:13px; color:#f4d47c; margin:4px 2px}
 
-    .stage-wrap{padding:0 16px}
+    .msg{min-height:18px; font-size:13px; color:#b86; margin:4px 2px}
+
+ 
     .stage{
       position:relative;
-      height: calc(100vh - 220px);
-      min-height: 420px;
-      border:1px solid #ffffff14; border-radius:16px; overflow:hidden;
-      background: radial-gradient(900px 420px at 30% -10%, #262a4a55, transparent 60%);
+      border-radius:18px;
+      padding:18px;              
+      border:1px solid #e9ecf8;
+      overflow:hidden;
+      min-height:60vh;
+    
+      background:
+        radial-gradient(1100px 700px at 0% -20%, var(--stage-1) 0%, var(--stage-0) 45%),
+        radial-gradient(900px 600px at 120% 120%, var(--stage-2) 0%, transparent 60%),
+        var(--stage-0);
+      animation: stageMove 22s ease-in-out infinite alternate;
+    }
+    @keyframes stageMove{
+      0%   { background-position: 0% 0%, 120% 120%, 0 0; filter:hue-rotate(0deg);    }
+      50%  { background-position: 12% -8%, 90% 100%, 0 0;  filter:hue-rotate(6deg);  }
+      100% { background-position: 24% -14%, 70% 90%, 0 0; filter:hue-rotate(12deg); }
     }
 
+ 
+    #wall{ position:relative; height:calc(70vh); min-height:420px; }
+
+  
     .card{
-      position:absolute; left:0; top:0; width:var(--card-w); height:var(--card-h);
-      text-decoration:none; color:inherit; cursor:pointer;
+      position:absolute; display:block; width:118px; border-radius:14px; text-decoration:none; color:#e9ecff;
       background:linear-gradient(180deg, #11172d, #0c1226);
-      border:1px solid var(--border); border-radius:12px; overflow:hidden;
-      box-shadow:var(--shadow);
+      border:1px solid var(--border); overflow:hidden; box-shadow:var(--shadow);
       will-change: transform;
-      transition-property: transform, border-color, box-shadow;
-      transition-timing-function: ease-in-out;
-      transition-duration: var(--dur, 5s); /* JS updates this per segment */
     }
-    .card:hover{ border-color:#2a3870; box-shadow:0 14px 32px rgba(17,22,38,.6) }
-
-    .pfp{ width:100%; height: calc(var(--card-w)); background:#0c1226; overflow:hidden }
-    .pfp img{ width:100%; height:100%; object-fit:cover; display:block }
-
-    .caption{ padding:6px 8px; background:#0b1124; height: calc(var(--card-h) - var(--card-w)); display:flex; align-items:center }
+    .pfp{width:100%; aspect-ratio:1/1; background:#0c1226; overflow:hidden}
+    .pfp img{width:100%; height:100%; object-fit:cover; display:block}
+    .caption{padding:6px 8px; background:#0b1124}
     .handle{
       display:block; font-weight:900; padding:4px 6px; background:#0f1a39; border:1px solid #1d2952;
       border-radius:8px; color:#dbe0ff; max-width:100%;
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:12px;
     }
 
-    @media (prefers-reduced-motion: reduce){
-      .card{ transition: none !important; transform: translate3d(0,0,0) !important; }
-    }
-
+ 
     .credit{
-      position:fixed; left:50%; transform:translateX(-50%); bottom:12px;
-      background:#101632; color:#cfd6ff; border:1px solid #22305d;
-      padding:7px 10px; border-radius:999px; font-size:12px; font-weight:800;
+      position:fixed; left:50%; transform:translateX(-50%);
+      bottom:12px; background:#101632; color:#cfd6ff;
+      border:1px solid #22305d; padding:7px 10px; border-radius:999px; font-size:12px; font-weight:800;
       text-decoration:none; box-shadow:0 6px 18px rgba(0,0,0,.35)
     }
 
-    @media (max-width: 480px){
-      :root{ --card-w:96px; --card-h:124px; }
-    }
   
+    @media (prefers-reduced-motion: reduce) {
+      .stage { animation:none !important; }
+    }
