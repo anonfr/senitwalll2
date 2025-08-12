@@ -2,21 +2,27 @@
     :root{
       --bg:#0b0f16; --ink:#e9ecff; --muted:#b7c0e3;
       --accent:#6f6ce8; --accent-2:#9a97ff; --border:#1d2340;
-      --shadow:0 8px 22px rgba(0,0,0,.35);
+      --shadow:0 10px 26px rgba(0,0,0,.35);
+      --card-w:110px;  /* base card width */
+      --card-h:140px;  /* base card height (image + caption) */
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
       margin:0; font-family: ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial;
-      background:radial-gradient(1200px 800px at 10% -20%, #132242 0%, #0b0f16 45%) no-repeat, var(--bg);
-      color:var(--ink)
+      background:
+        radial-gradient(1200px 800px at 10% -20%, #132242 0%, #0b0f16 45%) no-repeat,
+        var(--bg);
+      color:var(--ink);
+      overflow-x:hidden;
     }
-    .wrap{max-width:1200px; margin:28px auto 80px; padding:0 16px}
-    h1{margin:0 0 6px; font-size:40px; font-weight:900; letter-spacing:.2px}
-    .lead{margin:0 0 16px; color:var(--muted)}
+
+    .wrap{max-width:1200px; margin:20px auto 12px; padding:0 16px}
+    h1{margin:0 0 4px; font-size:38px; font-weight:900; letter-spacing:.2px}
+    .lead{margin:0 0 12px; color:var(--muted)}
 
     /* Form */
-    .controls{display:flex; gap:10px; align-items:center; margin:12px 0 6px}
+    .controls{display:flex; gap:10px; align-items:center; margin:10px 0 4px}
     .controls input{
       flex:1; padding:12px 14px; border-radius:12px; outline:none;
       background:#0e1430; color:var(--ink);
@@ -30,45 +36,62 @@
     .controls button:hover{ filter:brightness(1.06); transform:translateY(-1px) }
     .msg{min-height:18px; font-size:13px; color:#f4d47c; margin:4px 2px}
 
-    /* Compact grid so many cards fit on one screen */
-    .grid{
-      display:grid; gap:10px; margin-top:10px;
-      grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+    /* Floating canvas */
+    .stage-wrap{padding:0 16px}
+    .stage{
+      position:relative;
+      height: calc(100vh - 220px);   /* fill the rest of screen under header/form */
+      min-height: 420px;             /* reasonable minimum */
+      border:1px solid #ffffff14; border-radius:16px; overflow:hidden;
+      background:
+        radial-gradient(900px 420px at 30% -10%, #262a4a55, transparent 60%);
     }
 
-    /* Card + floating */
-    @keyframes drift {
-      0%   { transform: translate3d(0,0,0) }
-      50%  { transform: translate3d(var(--dx, 6px), var(--dy, -8px), 0) }
-      100% { transform: translate3d(0,0,0) }
-    }
+    /* Card (absolute, clickable) */
     .card{
-      display:block; text-decoration:none; color:inherit;
+      position:absolute; left:0; top:0; width:var(--card-w); height:var(--card-h);
+      text-decoration:none; color:inherit; cursor:pointer;
       background:linear-gradient(180deg, #11172d, #0c1226);
       border:1px solid var(--border); border-radius:12px; overflow:hidden;
       box-shadow:var(--shadow);
-      animation: drift var(--dur, 9s) ease-in-out infinite;
-      will-change: transform;
+      will-change: transform, left, top;
       transition: box-shadow .12s ease, border-color .12s ease;
+      animation: drift var(--dur, 8s) ease-in-out infinite;
+      animation-delay: var(--delay, 0s);
     }
-    .card:hover{ border-color:#243059; box-shadow:0 12px 26px rgba(17,22,38,.6) }
-    .pfp{width:100%; aspect-ratio:1/1; background:#0c1226; overflow:hidden}
-    .pfp img{width:100%; height:100%; object-fit:cover; display:block}
-    .caption{padding:6px 8px; background:#0b1124}
+    .card:hover{ border-color:#2a3870; box-shadow:0 14px 32px rgba(17,22,38,.6) }
+
+    .pfp{ width:100%; height: calc(var(--card-w)); background:#0c1226; overflow:hidden }
+    .pfp img{ width:100%; height:100%; object-fit:cover; display:block }
+
+    .caption{ padding:6px 8px; background:#0b1124; height: calc(var(--card-h) - var(--card-w)); display:flex; align-items:center }
     .handle{
       display:block; font-weight:900; padding:4px 6px; background:#0f1a39; border:1px solid #1d2952;
       border-radius:8px; color:#dbe0ff; max-width:100%;
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:12px;
     }
-    @media (prefers-reduced-motion: reduce) {
-      .card{ animation:none !important; }
+
+    /* Per-card translation + rotation wobble around its absolute anchor point */
+    @keyframes drift{
+      0%   { transform: translate3d(0,0,0) rotate(var(--r0, 0deg)); }
+      50%  { transform: translate3d(var(--dx, 40px), var(--dy, -40px), 0) rotate(var(--r1, .8deg)); }
+      100% { transform: translate3d(0,0,0) rotate(var(--r0, 0deg)); }
     }
 
-    /* Footer badge centered bottom */
+    @media (prefers-reduced-motion: reduce){
+      .card{ animation: none !important; }
+    }
+
+    /* Footer credit */
     .credit{
-      position:fixed; left:50%; transform:translateX(-50%);
-      bottom:12px; background:#101632; color:#cfd6ff;
-      border:1px solid #22305d; padding:7px 10px; border-radius:999px; font-size:12px; font-weight:800;
+      position:fixed; left:50%; transform:translateX(-50%); bottom:12px;
+      background:#101632; color:#cfd6ff; border:1px solid #22305d;
+      padding:7px 10px; border-radius:999px; font-size:12px; font-weight:800;
       text-decoration:none; box-shadow:0 6px 18px rgba(0,0,0,.35)
     }
-  
+
+    /* Smaller cards on tight screens so more fit */
+    @media (max-width: 480px){
+      :root{ --card-w:96px; --card-h:124px; }
+    }
+ 
