@@ -6,13 +6,13 @@
 <title>Aztec PFP Wall</title>
 <style>
   :root{
-    --accent:#6f6ce8; --border:#e8eaf4; --text:#121428; --muted:#667; --bg:#0b0f14;
-    --panel:#ffffff;
+    --accent:#6f6ce8; --border:#e8eaf4; --text:#121428; --muted:#a9b0d6;
+    --bg:#0b0f14; --panel:#1a1f33cc;
+    --zoom:1; /* runtime-controlled */
   }
   *{ box-sizing:border-box; }
   body{ margin:0; font-family: ui-sans-serif, system-ui; color:#e6eef8; background:var(--bg); }
 
-  /* Animated Aztec-ish background */
   .bg{
     position:fixed; inset:0; z-index:-2;
     background:
@@ -21,34 +21,27 @@
       linear-gradient(160deg,#0b0f14 0%, #0e1320 60%, #0b0f14 100%);
   }
   .bg::after{
-    content:"";
-    position:absolute; inset:-10%;
+    content:""; position:absolute; inset:-10%;
     background:
       linear-gradient(90deg, transparent 0 40%, #6f6ce80d 50%, transparent 60%),
       repeating-linear-gradient(45deg, transparent 0 18px, #6f6ce80a 18px 19px);
-    animation: sweep 6s linear infinite;
-    mix-blend-mode: screen;
+    animation: sweep 6s linear infinite; mix-blend-mode: screen;
   }
-  @keyframes sweep{
-    0%{ transform: translateX(-10%); opacity:.5 }
-    50%{ opacity:.25 }
-    100%{ transform: translateX(10%); opacity:.5 }
-  }
+  @keyframes sweep{ 0%{transform:translateX(-10%);opacity:.5} 50%{opacity:.25} 100%{transform:translateX(10%);opacity:.5} }
 
   header{ max-width:1100px; margin:24px auto 0; padding:0 16px; }
   h1{ margin:0 0 6px; color:#cfd5ff; font-size:40px; line-height:1.1; }
-  .sub{ color:#a9b0d6; font-weight:600; }
+  .sub{ color:var(--muted); font-weight:600; }
 
   .wrap{ max-width:1100px; margin:16px auto; padding:0 16px; }
   .panel{
     border:1px solid #ffffff1a; border-radius:14px; padding:12px;
     background:linear-gradient(180deg,#1a1f33cc,#161a2dcc);
-    box-shadow:0 8px 24px rgba(0,0,0,.25);
-    backdrop-filter: blur(6px);
+    box-shadow:0 8px 24px rgba(0,0,0,.25); backdrop-filter: blur(6px);
   }
 
-  /* Controls */
-  .controls{ display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:center; }
+  /* Controls row */
+  .controls{ display:grid; grid-template-columns: 1fr auto auto; gap:10px; align-items:center; }
   .controls input{
     height:48px; border-radius:12px; border:1px solid #ffffff22;
     padding:0 14px; font-size:16px; background:#0f1530; color:#e6eaff;
@@ -58,53 +51,60 @@
     background: var(--accent); color:#fff; font-weight:700; cursor:pointer; transition: transform .15s, background .2s;
   }
   .controls button:hover{ background:#5a58d8; transform: translateY(-1px); }
-  @media (max-width:640px){ .controls{ grid-template-columns: 1fr; } }
+
+  /* Zoom control */
+  .zoom{
+    display:flex; align-items:center; gap:8px; border:1px solid #ffffff22; border-radius:10px; padding:6px 8px; background:#0f1530;
+  }
+  .zoom button{
+    height:32px; padding:0 10px; border-radius:8px; border:1px solid #ffffff22; background:#1b2248; color:#e6eaff; font-weight:800; cursor:pointer;
+  }
+  .zoom .val{ min-width:46px; text-align:center; color:#cfd5ff; font-weight:800; }
+
+  @media (max-width:640px){
+    .controls{ grid-template-columns: 1fr auto; }
+    .zoom{ grid-column: 1 / -1; justify-self: start; }
+  }
 
   /* Floating canvas */
   .canvas {
-    position: relative; height: calc(100vh - 230px);
-    border:1px solid #ffffff14; border-radius:16px; overflow:hidden;
+    position: relative;
+    height: calc(100vh - 260px); /* a bit taller than before */
+    border:1px solid #ffffff14; border-radius:16px;
+    overflow:hidden;
     background: radial-gradient(900px 420px at 30% -10%, #262a4a55, transparent 60%);
   }
   .hint { color:#a9b0d6; font-size:13px; margin:8px 0 0 4px; }
 
-  /* Card: smaller, with interactive float */
-/* Card: now an <a> (clickable) */
-.card{
-  position:absolute; width:150px; height:190px;
-  border:1px solid #ffffff1f; border-radius:16px; overflow:hidden; background:#0f1530;
-  box-shadow:0 12px 30px rgba(0,0,0,.35);
-  will-change: transform;
-  animation: float var(--dur,8s) ease-in-out infinite;
-  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
-  text-decoration:none;               /* remove link underline */
-  cursor:pointer;                     /* show hand cursor */
-  color:#e6eaff;                      /* text color inside anchor */
-}
-.card:hover{
-  transform: translate3d(0,0,0) scale(1.04) rotateZ(var(--tilt,0deg));
-  box-shadow:0 18px 38px rgba(0,0,0,.45);
-  filter: brightness(1.05);
-  animation-play-state: paused;
-}
-.pfp{ height:132px; background:#000; }
-.pfp img{ width:100%; height:100%; object-fit:cover; display:block; }
-.body{ padding:8px 10px; }
-.name{ font-weight:900; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-
-/* Mobile: shrink cards so more fit */
-@media (max-width: 640px){
-  .card{ width:130px; height:170px; }
-  .pfp{ height:118px; }
-  .name{ font-size:13px; }
-}
-  .pfp{ height:132px; background:#000; }
+  /* Clickable card (anchor) */
+  .card{
+    position:absolute;
+    width: calc(150px * var(--zoom));
+    height: calc(190px * var(--zoom));
+    border:1px solid #ffffff1f; border-radius:16px; overflow:hidden; background:#0f1530;
+    box-shadow:0 12px 30px rgba(0,0,0,.35);
+    will-change: transform;
+    animation: float var(--dur,8s) ease-in-out infinite;
+    transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+    text-decoration:none; cursor:pointer; color:#e6eaff;
+  }
+  .card:hover{
+    transform: translate3d(0,0,0) scale(1.04) rotateZ(var(--tilt,0deg));
+    box-shadow:0 18px 38px rgba(0,0,0,.45);
+    filter: brightness(1.05);
+    animation-play-state: paused;
+  }
+  .pfp{ height: calc(132px * var(--zoom)); background:#000; }
   .pfp img{ width:100%; height:100%; object-fit:cover; display:block; }
   .body{ padding:8px 10px; }
-  .name{ font-weight:900; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#e6eaff; }
+  .name{
+    font-weight:900;
+    font-size: calc(14px * var(--zoom));
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    max-width: 100%;
+  }
 
-
-  /* Float path (varied per card via CSS vars) */
+  /* Float drift */
   @keyframes float {
     0%   { transform: translate3d(0,0,0) }
     50%  { transform: translate3d(var(--dx, 10px), var(--dy, -12px), 0) }
@@ -120,20 +120,26 @@
 
 <header>
   <h1>Aztec PFP Wall</h1>
-  <div class="sub">Drop your X handle. Your avatar shows instantly. The wall updates itself.</div>
+  <div class="sub">Drop your X handle. Your avatar shows instantly. Control the zoom to fit more cards.</div>
 </header>
 
 <div class="wrap panel">
   <form id="form" class="controls">
     <input id="handle" type="text" placeholder="@handle" required />
     <button id="submitBtn" type="submit">Submit</button>
+
+    <div class="zoom" aria-label="Zoom controls">
+      <button type="button" id="zoomOut">−</button>
+      <div class="val" id="zoomVal">100%</div>
+      <button type="button" id="zoomIn">+</button>
+    </div>
   </form>
   <div class="hint" id="msg"></div>
 </div>
 
 <div class="wrap">
   <div id="canvas" class="canvas"></div>
-  <div class="hint">Cards float with gentle drift. The wall refreshes every 30s or when someone submits.</div>
+  <div class="hint">Tip: Use the zoom control to fit more cards on small screens.</div>
 </div>
 
 <footer>
@@ -141,8 +147,15 @@
 </footer>
 
 <script>
-let lastSnapshot = "";      // for change detection
-let liveTimer   = null;     // polling timer
+let Z = (window.innerWidth <= 640) ? 0.85 : 1;  // default zoom: slightly smaller on phones
+const Z_MIN = 0.7, Z_MAX = 1.2, Z_STEP = 0.05;
+
+function setZoom(val){
+  Z = Math.max(Z_MIN, Math.min(Z_MAX, val));
+  document.documentElement.style.setProperty('--zoom', Z);
+  document.getElementById('zoomVal').textContent = Math.round(Z*100) + '%';
+  render(true); // re-layout with new sizes
+}
 
 async function fetchList(){
   const r = await fetch('/api/list', { cache:'no-store' });
@@ -158,27 +171,18 @@ function cardHtml(p, left, top, dx, dy, delay, dur, tilt){
             --tilt:${tilt}deg;
             animation-delay:${delay}s; --dur:${dur}s">
     <div class="pfp"><img src="${p.pfp_url}" alt="@${p.handle}" loading="lazy"></div>
-    <div class="body">
-      <div class="name">@${p.handle}</div>
-    </div>
+    <div class="body"><div class="name">@${p.handle}</div></div>
   </a>`;
 }
 
+/* compute layout spots based on the *scaled* card size so capacity increases when zooming out */
 function layoutCards(items){
   const canvas = document.getElementById('canvas');
   const W = canvas.clientWidth, H = canvas.clientHeight;
 
-  // Read current card size from CSS (matches media queries)
-  const cardProbe = document.createElement('div');
-  cardProbe.className = 'card';
-  cardProbe.style.visibility = 'hidden';
-  cardProbe.style.position = 'absolute';
-  canvas.appendChild(cardProbe);
-  const cw = Math.round(cardProbe.clientWidth)  || 150;
-  const ch = Math.round(cardProbe.clientHeight) || 190;
-  canvas.removeChild(cardProbe);
-
-  const pad = 14;
+  const baseW = 150, baseH = 190, pad = 14;
+  const cw = Math.round(baseW * Z);
+  const ch = Math.round(baseH * Z);
 
   const cols = Math.max(1, Math.floor((W - pad) / (cw + pad)));
   const rows = Math.max(1, Math.floor((H - pad) / (ch + pad)));
@@ -192,19 +196,18 @@ function layoutCards(items){
     }
   }
 
-  // randomize spots
   const order = spots.slice().sort(() => Math.random()-0.5);
-
   let html = '';
+
   const n = items.length;
   const cap = Math.max(1, order.length);
 
   for(let i=0;i<n;i++){
-    // Always place something, even if we exceed capacity: reuse a spot with slight offset
     const base = order[i % cap] || [pad, pad];
-    const wrap = Math.floor(i / cap); // how many times we've wrapped
-    const jitterX = (wrap * 10) * (i % 2 ? 1 : -1);
-    const jitterY = (wrap * 12);
+    // If over capacity, offset subsequent wraps a bit to reveal extra cards
+    const wrap = Math.floor(i / cap);
+    const jitterX = (wrap * Math.min(12, Math.max(6, Math.round(16 * Z)))) * (i % 2 ? 1 : -1);
+    const jitterY = (wrap * Math.min(16, Math.max(8, Math.round(20 * Z))));
 
     const left = Math.min(Math.max(base[0] + jitterX, pad), Math.max(pad, W - cw - pad));
     const top  = Math.min(Math.max(base[1] + jitterY, pad), Math.max(pad, H - ch - pad));
@@ -220,53 +223,14 @@ function layoutCards(items){
   canvas.innerHTML = html;
 }
 
-/* pack cards into a coarse grid to avoid overlaps, then add drift */
-function layoutCards(items){
-  const canvas = document.getElementById('canvas');
-  const W = canvas.clientWidth, H = canvas.clientHeight;
-  const cw = 150, ch = 190, pad = 14;
-
-  const cols = Math.max(1, Math.floor((W - pad) / (cw + pad)));
-  const rows = Math.max(1, Math.floor((H - pad) / (ch + pad)));
-  const spots = [];
-  for(let r=0; r<rows; r++){
-    for(let c=0; c<cols; c++){
-      const x = pad + c*(cw+pad);
-      const y = pad + r*(ch+pad);
-      spots.push([x,y]);
-    }
-  }
-
-  // randomize which spots are filled
-  const order = spots.sort(() => Math.random()-0.5);
-  const n = Math.min(items.length, order.length);
-
-  let html = '';
-  for(let i=0;i<n;i++){
-    const [left, top] = order[i];
-    const dx   = Math.round(Math.random()*18 - 9);    // -9..9
-    const dy   = Math.round(Math.random()*24 - 12);   // -12..12
-    const delay= +(Math.random()*4).toFixed(2);
-    const dur  = 7 + Math.round(Math.random()*4);     // 7..11s
-    const tilt = Math.round(Math.random()*2 - 1) * 2; // -2,0,2 deg
-    html += cardHtml(items[i], left, top, dx, dy, delay, dur, tilt);
-  }
-  canvas.innerHTML = html;
-}
-
-function snapshot(items){
-  // small hash: count + first 10 ids/handles
-  return JSON.stringify({
-    n: items.length,
-    k: items.slice(0,10).map(x=>x.id||x.handle)
-  });
-}
+let lastSnap = "";
+function snapshot(items){ return JSON.stringify({ n: items.length, k: items.slice(0,10).map(x=>x.id||x.handle) }); }
 
 async function render(force=false){
   const items = await fetchList();
   const snap = snapshot(items);
-  if (force || snap !== lastSnapshot){
-    lastSnapshot = snap;
+  if (force || snap !== lastSnap){
+    lastSnap = snap;
     layoutCards(items);
   }
 }
@@ -291,16 +255,14 @@ async function submitForm(e){
   finally{ btn.disabled = false; btn.textContent = 'Submit'; }
 }
 
-/* Live auto-refresh every 30s */
-function startLive(){
-  if (liveTimer) clearInterval(liveTimer);
-  liveTimer = setInterval(()=> render(false), 30000);
-}
-
+/* listeners */
 document.getElementById('form').addEventListener('submit', submitForm);
-window.addEventListener('resize', ()=>render(true));
-render(true);
-startLive();
+document.getElementById('zoomIn').addEventListener('click', ()=> setZoom(Z + Z_STEP));
+document.getElementById('zoomOut').addEventListener('click',()=> setZoom(Z - Z_STEP));
+window.addEventListener('resize', ()=> render(true));
+
+/* boot */
+setZoom(Z);   // sets CSS var + label + triggers first render
 </script>
 </body>
 </html>
