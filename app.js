@@ -2,6 +2,33 @@
     const wall = document.getElementById('wall');
     const msg  = document.getElementById('msg');
     const btn  = document.getElementById('submitBtn');
+    const SITE_URL = location.origin; // or hardcode your domain if you prefer
+const shareWrap = document.getElementById('shareWrap');
+const shareBtn  = document.getElementById('shareBtn');
+const shareLink = document.getElementById('shareLink');
+
+function buildShare({ handle }) {
+  const text = `I just added my PFP to the Aztec Wall. Add yours too! 🔗`;
+  const url  = `${SITE_URL}/?ref=${encodeURIComponent(handle || '')}`;
+  const hashtags = ['AztecNetwork','AztecWall'].join(',');
+  const intent = new URL('https://twitter.com/intent/tweet');
+  intent.searchParams.set('text', text);
+  intent.searchParams.set('url', url);
+  intent.searchParams.set('hashtags', hashtags);
+  return { text, url, intent: intent.toString() };
+}
+
+async function shareNativeOrIntent(shareData, fallbackUrl) {
+  try {
+    if (navigator.share) {
+      await navigator.share(shareData); // opens system share sheet on mobile
+    } else {
+      window.open(fallbackUrl, '_blank', 'noopener');
+    }
+  } catch (_) {
+    // user canceled — no-op
+  }
+}
 
     async function fetchList(){
       const r = await fetch('/api/list', { cache:'no-store' });
@@ -110,6 +137,12 @@
         } else {
           document.getElementById('form').reset();
           await render();
+        const share = buildShare({ handle });
+    shareLink.href = share.intent;
+    shareWrap.style.display = 'inline-block';
+    shareBtn.onclick = () =>
+      shareNativeOrIntent({ title: 'Aztec PFP Wall', text: share.text, url: share.url }, share.intent);
+
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       } catch (err){

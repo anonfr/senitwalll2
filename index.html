@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Aztec PFP Wall</title>
+  <title>Aztec Wall</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
   <meta name="theme-color" content="#121528" />
   <link rel="stylesheet" href="style.css" />
@@ -11,15 +11,22 @@
 </head>
 <body>
      <div class="wrap">
-    <h1>Aztec PFP Wall</h1>
-    <p class="lead">Submit your X handle. PFPs float freely—tap a card to open the profile. Pinch‑zoom if you like.</p>
+    <h1>Aztec Wall</h1>
+    <p class="lead">Submit your X handle. Join Aztec Family Wall</p>
 
     <form id="form" class="controls" autocomplete="off">
       <input id="handle" type="text" inputmode="text" placeholder="@handle" />
       <button id="submitBtn" type="submit">Submit</button>
     </form>
     <div id="msg" class="msg"></div>
-
+<div id="shareWrap" style="display:none; margin:8px 0 2px;">
+  <button id="shareBtn"
+    style="background:linear-gradient(180deg,#6f6ce8,#9a97ff);color:#fff;font-weight:800;border:0;border-radius:12px;padding:10px 14px;cursor:pointer">
+    Share my PFP
+  </button>
+  <a id="shareLink" href="#" target="_blank" rel="noopener"
+     style="margin-left:10px;color:#9aa8ff;font-weight:700;text-decoration:none;">Open tweet</a>
+</div>
   
     <div class="stage">
       <section id="wall" aria-live="polite"></section>
