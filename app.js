@@ -82,56 +82,68 @@ const stage = document.getElementById('stage');
           const maxUp    = (top - pad);
 
           // Pick a random target offset within 35–65% of available space
-          const pick = (negRoom, posRoom) => {
-            const goNeg = Math.random() < 0.5;
-            const room  = goNeg ? negRoom : posRoom;
-            const frac  = 0.35 + Math.random()*0.30; // 35..65%
-            let delta   = room * frac;
-            if (goNeg) delta = -delta;
-            // If almost no room, flip
-            if (Math.abs(delta) < 8) delta = -delta;
-            return delta;
-          };
+         // Pick a random target offset within 35–60% of available space
+const pick = (negRoom, posRoom) => {
+  const goNeg = Math.random() < 0.5;
+  const room  = goNeg ? negRoom : posRoom;
+  const frac  = 0.35 + Math.random()*0.25; // 35..60%
+  let delta   = room * frac;
+  if (goNeg) delta = -delta;
+  if (Math.abs(delta) < 8) delta = -delta; // avoid tiny steps
+  return delta;
+};
 
-          const dx = pick(maxLeft, maxRight);
-          const dy = pick(maxUp,   maxDown);
+const dx = pick(maxLeft, maxRight);
+const dy = pick(maxUp,   maxDown);
 
-          // Slower, calmer: 3.6–7.2s per leg, a tiny random delay 0–0.6s
-          const dur   = (3.6 + Math.random() * 3.6).toFixed(2); // 3.6..7.2s
-          const delay = (Math.random() * 0.6).toFixed(2);       // 0..0.6s
+// Calmer speed: 4.5–8.0s, tiny delay 0–0.6s
+const dur   = (4.5 + Math.random() * 3.5).toFixed(2); // 4.5..8.0s
+const delay = (Math.random() * 0.6).toFixed(2);       // 0..0.6s
 
-          // Tiny rotation wobble each leg (optional)
-          const r = ((Math.random() * 2.0) - 1.0).toFixed(2);   // -1..1deg
+const r = ((Math.random() * 2.0) - 1.0).toFixed(2);   // -1..1deg wobble
 
-          el.style.setProperty('--dur', `${dur}s`);
-          el.style.transitionDuration = `${dur}s`;
-          el.style.transitionDelay = `${delay}s`;
-          el.style.transform = `translate3d(${dx.toFixed(1)}px, ${dy.toFixed(1)}px, 0) rotate(${r}deg)`;
+el.style.setProperty('--dur', `${dur}s`);
+el.style.transitionDuration = `${dur}s`;
+el.style.transitionDelay = `${delay}s`;
+el.style.transform = `translate3d(${dx.toFixed(1)}px, ${dy.toFixed(1)}px, 0) rotate(${r}deg)`;
         };
 
         // Kick off with slight stagger so not all move at once
         setTimeout(wander, Math.random()*800);
 
         // On every transition end, choose a new target
-        el.addEventListener('transitionend', (ev)=>{
-          // Only react to transform transitions
-          if (ev.propertyName !== 'transform') return;
-          // Snap current transform as new base by updating left/top and resetting transform.
-          const m = el.style.transform.match(/translate3d\(([-\d.]+)px,\s*([-\d.]+)px/);
-          if (m){
-            const dx = parseFloat(m[1] || '0');
-            const dy = parseFloat(m[2] || '0');
-            const left = parseFloat(el.style.left || '0');
-            const top  = parseFloat(el.style.top  || '0');
-            el.style.left = `${clamp(left + dx, pad, W - cw - pad)}px`;
-            el.style.top  = `${clamp(top  + dy, pad, H - ch - pad)}px`;
-          }
-          el.style.transitionDelay = '0s';
-          el.style.transform = 'translate3d(0,0,0) rotate(0deg)';
+        el.addEventListener('transitionend', (ev) => {
+  if (ev.propertyName !== 'transform') return;
 
-          // Next leg
-          requestAnimationFrame(()=> requestAnimationFrame(wander));
-        }, { passive:true });
+  const pad = 10;
+  const W = stage.clientWidth;
+  const H = stage.clientHeight;
+  const cw = cssNum(document.documentElement, '--card-w') || 110;
+  const ch = cssNum(document.documentElement, '--card-h') || 140;
+
+  // Parse current transform deltas
+  const m = el.style.transform.match(/translate3d\(([-\d.]+)px,\s*([-\d.]+)px/);
+  const dx = m ? parseFloat(m[1]) : 0;
+  const dy = m ? parseFloat(m[2]) : 0;
+
+  // Compute new anchor (base) position
+  const left = parseFloat(el.style.left || '0');
+  const top  = parseFloat(el.style.top  || '0');
+  const nextLeft = clamp(left + dx, pad, W - cw - pad);
+  const nextTop  = clamp(top  + dy, pad, H - ch - pad);
+
+  // --- Teleport-free snap: disable transition → snap → reflow → restore ---
+  const oldTransition = el.style.transition;
+  el.style.transition = 'none';                  // disable animations
+  el.style.left = `${nextLeft}px`;
+  el.style.top  = `${nextTop}px`;
+  el.style.transform = 'translate3d(0,0,0) rotate(0deg)';  // reset transform
+  void el.offsetHeight;                          // force reflow
+  el.style.transition = oldTransition || 'transform var(--dur,5s) ease-in-out';
+
+  // Next leg
+  requestAnimationFrame(() => wander());
+}, { passive: true });
       });
     }
 
