@@ -24,11 +24,22 @@ export default async function handler(req, res) {
     } catch (_) {}
 
     // 2) Fallback via our proxy to Unavatar if needed
-    if (!pfpUrl) {
-      const unav = `https://unavatar.io/twitter/${encodeURIComponent(handle)}`;
-      pfpUrl = `${baseUrl}/api/img?u=${encodeURIComponent(unav)}`;
-      source = "fallback";
+   // /api/submit.js (fallback section only)
+if (!pfpUrl) {
+  try {
+    const u = await fetch(
+      `https://unavatar.io/twitter/${encodeURIComponent(handle)}?json`,
+      { headers: { Accept: "application/json" }, cache: "no-store" }
+    );
+    if (u.ok) {
+      const j = await u.json();
+      if (j?.url) pfpUrl = j.url;           // <- direct image URL
     }
+  } catch (_) {}
+}
+
+// If still nothing, keep a tiny local default
+if (!pfpUrl) pfpUrl = "/img/default-pfp.svg";
 
     // 3) Save only the columns Postgres accepts (omit twitter_url)
     const client = sb();
