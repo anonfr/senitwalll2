@@ -11,40 +11,38 @@ async function fetchList(){
 function cardNode(item){
   const handleNoAt = String(item.handle || '').replace(/^@+/, '');
   const twitterUrl = item.twitter_url || `https://twitter.com/${handleNoAt}`;
-  const pfp        = item.pfp_url || '';   // from DB
+  const pfp        = item.pfp_url || '';
+  const handleText = handleNoAt ? '@' + handleNoAt : '';
 
   const a = document.createElement('a');
   a.className = 'card';
   a.href = twitterUrl;
   a.target = '_blank';
   a.rel = 'noopener';
-
-  const p = document.createElement('div');
-  p.className = 'pfp';
-
-  const img = document.createElement('img');
-  img.loading = 'lazy';
-  img.decoding = 'async';
-  img.alt = `@${handleNoAt}'s avatar`;
-  img.src = pfp || '/img/default-pfp.png';
-
-  // If the avatar URL fails for any reason, show the local placeholder
-  img.addEventListener('error', () => {
-    if (!img.src.endsWith('/img/default-pfp.png')) img.src = '/img/default-pfp.png';
-  });
-
-  p.appendChild(img);
-
-  const caption = document.createElement('div');
-  caption.className = 'caption';
-  caption.innerHTML = `<span class="handle">@${handleNoAt}</span>`;
-
-  a.appendChild(p);
-  a.appendChild(caption);
+  a.innerHTML = `
+    <div class="pfp">
+      <img
+        src="${pfp}"
+        alt="${handleText}'s avatar"
+        loading="lazy"
+        decoding="async"
+        referrerpolicy="no-referrer"
+        onerror="this.style.display='none'; this.closest('.pfp').style.background='#11172d';"
+      >
+    </div>
+    <div class="caption"><span class="handle">${handleText}</span></div>
+  `;
   return a;
+}
 
-
-function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
+// Fisher–Yates
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j=(Math.random()*(i+1))|0;
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
 function rotate(arr){
   if(!arr.length) return arr;
   const key='aztec_pfp_wall_rot';
@@ -53,27 +51,34 @@ function rotate(arr){
   sessionStorage.setItem(key, String(off));
   return arr.slice(off).concat(arr.slice(0,off));
 }
+
 function random(min,max){ return Math.random()*(max-min)+min; }
 
 function floatCard(el, stage){
+  // Cancel any previous animations on this element before starting a new path
+  el.getAnimations?.().forEach(a => a.cancel());
+
   const W = stage.clientWidth  - el.clientWidth;
   const H = stage.clientHeight - el.clientHeight;
 
   function hop(){
     const x = random(0, W);
     const y = random(0, H);
-    const d = random(10, 18);        
+    const d = random(10, 18); // seconds
     el.animate(
       [{ transform:`translate(${x}px, ${y}px)` }],
       { duration: d*1000, easing: 'ease-in-out', fill: 'forwards' }
-    ).finished.then(hop).catch(()=>{});
+    ).finished.then(hop).catch(()=>{ /* element removed, ignore */ });
   }
+
+  // Start from a random spot
   el.style.transform = `translate(${random(0,W)}px, ${random(0,H)}px)`;
   setTimeout(hop, random(100, 1200));
 }
 
 async function render(){
-  msg.textContent = '';
+  if(!wall) return;
+  msg && (msg.textContent = '');
   try {
     let data = await fetchList();
     if (!Array.isArray(data) || !data.length){
@@ -90,21 +95,27 @@ async function render(){
     const cards = wall.querySelectorAll('.card');
     cards.forEach(el => floatCard(el, wall));
 
-    let t; window.addEventListener('resize', ()=>{ clearTimeout(t); t=setTimeout(()=>{
-      cards.forEach(el => floatCard(el, wall));
-    }, 200); });
+    // Recompute paths on resize (cancel running anims first inside floatCard)
+    let t;
+    window.addEventListener('resize', ()=>{
+      clearTimeout(t);
+      t = setTimeout(()=>{
+        cards.forEach(el => floatCard(el, wall));
+      }, 200);
+    });
 
   } catch(e){
-    msg.textContent = 'Failed to load. Refresh to try again.';
+    msg && (msg.textContent = 'Failed to load. Refresh to try again.');
   }
 }
 
-document.getElementById('form').addEventListener('submit', async (e)=>{
+document.getElementById('form')?.addEventListener('submit', async (e)=>{
   e.preventDefault();
   const raw = document.getElementById('handle').value;
   const handle = String(raw).trim().replace(/^@+/, '');
-  if(!handle){ msg.textContent = 'Enter a handle'; return; }
-  btn.disabled = true; btn.textContent = 'Submitting…'; msg.textContent = '';
+  if(!handle){ msg && (msg.textContent = 'Enter a handle'); return; }
+  if(btn){ btn.disabled = true; btn.textContent = 'Submitting…'; }
+  msg && (msg.textContent = '');
 
   try {
     const r = await fetch('/api/submit', {
@@ -112,44 +123,41 @@ document.getElementById('form').addEventListener('submit', async (e)=>{
       headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({ handle })
     });
-<<<<<<< HEAD
-
-    render();
-=======
     const j = await r.json();
     if(!r.ok || !j.ok){
-      msg.textContent = j?.error || 'Could not fetch PFP';
+      msg && (msg.textContent = j?.error || 'Could not fetch PFP');
     } else {
       document.getElementById('form').reset();
       await render();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   } catch (err){
-    msg.textContent = 'Network error';
+    msg && (msg.textContent = 'Network error');
   } finally {
-    btn.disabled = false; btn.textContent = 'Submit';
+    if(btn){ btn.disabled = false; btn.textContent = 'Submit'; }
   }
 });
 
 render();
 
-// --- Music toggle ---
+/* -------- Music toggle -------- */
 const music  = document.getElementById('bgMusic');
 const toggle = document.getElementById('musicToggle');
 
 if (music && toggle) {
-  music.volume = 0.45;   // comfortable default
+  music.volume = 0.45;
 
-  const setUI = (isPlaying) => {
-    toggle.classList.toggle('playing', isPlaying);
-    toggle.setAttribute('aria-pressed', isPlaying ? 'true' : 'false');
-    toggle.querySelector('.text').textContent = isPlaying ? 'Pause Music' : 'Play Music';
+  const setUI = (playing) => {
+    toggle.classList.toggle('playing', playing);
+    toggle.setAttribute('aria-pressed', playing ? 'true' : 'false');
+    const label = toggle.querySelector('.text');   // <-- FIX: matches your HTML
+    if (label) label.textContent = playing ? 'Pause Music' : 'Play Music';
   };
 
   toggle.addEventListener('click', async () => {
     try {
       if (music.paused) {
-        await music.play();           // iOS needs this to be awaited
+        await music.play();
         setUI(true);
       } else {
         music.pause();
@@ -157,11 +165,10 @@ if (music && toggle) {
       }
     } catch (err) {
       console.warn('Audio play blocked:', err);
-      (document.getElementById('msg')||{}).textContent = 'Tap again to allow audio.';
+      msg && (msg.textContent = 'Tap again to allow audio.');
     }
   });
 
-  // Optional: pause when tab/app goes to background
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && !music.paused) {
       music.pause();
@@ -169,4 +176,3 @@ if (music && toggle) {
     }
   });
 }
->>>>>>> 7c07da4 (Initial commit: Aztec Wall (music + PFP fixes))

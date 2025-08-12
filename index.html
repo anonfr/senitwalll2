@@ -10,24 +10,37 @@
     href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="%236f6ce8"/><rect x="18" y="18" width="28" height="28" rx="6" fill="%23ffffff"/></svg>' />
 </head>
 <body>
-     <div class="wrap">
+  <div class="wrap">
     <h1>Aztec Wall</h1>
     <p class="lead">Submit your X handle. Join Aztec Family Wall</p>
 
     <form id="form" class="controls" autocomplete="off">
-      <input id="handle" type="text" inputmode="text" placeholder="@handle" />
+      <input
+        id="handle"
+        name="handle"
+        type="text"
+        inputmode="text"
+        placeholder="@handle"
+        aria-label="X handle"
+        required
+        autocapitalize="none"
+        autocomplete="off"
+        spellcheck="false"
+      />
       <button id="submitBtn" type="submit">Submit</button>
     </form>
 
-<!-- Music control (centered under the form) -->
-<div class="music-row">
-  <button id="musicToggle" type="button" class="music-btn" aria-pressed="false">
-    <span class="note">🎵</span>
-    <span class="text">Play Music</span>
-  </button>
-</div>
+    <!-- Music control (centered under the form) -->
+    <div class="music-row">
+      <button id="musicToggle" type="button" class="music-btn" aria-pressed="false">
+        <span class="note">🎵</span>
+        <span class="text">Play Music</span>
+      </button>
+    </div>
 
-<audio id="bgMusic" src="/audio/aztec-theme.mp3" preload="auto" loop></audio>
+    <!-- Ensure /audio/aztec-theme.mp3 exists at the project root -->
+    <audio id="bgMusic" src="/audio/aztec-theme.mp3" preload="auto" loop></audio>
+
     <div id="msg" class="msg"></div>
     <div class="stage">
       <section id="wall" aria-live="polite"></section>
