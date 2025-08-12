@@ -1,3 +1,4 @@
+// /api/submit.js
 import { sb } from "./_supabase.js";
 
 const clean = s => s?.trim().replace(/^@+/, "").toLowerCase() || "";
@@ -10,43 +11,33 @@ export default async function handler(req, res) {
     if (!handle) return res.status(400).json({ error: "Invalid handle" });
 
     const baseUrl = `${req.headers["x-forwarded-proto"] || "https"}://${req.headers.host}`;
-    const twitterUrl = `https://x.com/${encodeURIComponent(handle)}`;
 
     // 1) Try Twitter first
     let pfpUrl = null;
-    let rateLimited = false;
-
+    let source = "twitter";
     try {
       const r = await fetch(`${baseUrl}/api/twitter-pfp?u=${encodeURIComponent(handle)}`, { cache: "no-store" });
       if (r.ok) {
         const j = await r.json();
         pfpUrl = j?.url || null;
-      } else if (r.status === 429) {
-        rateLimited = true;
-      } else {
-        // other upstream failure – leave pfpUrl null so we try fallback below
       }
-    } catch {
-      // network error – leave pfpUrl null so we try fallback below
-    }
+    } catch (_) {}
 
-    // 2) Fallback only if we don't have a pfp yet
+    // 2) Fallback via our proxy to Unavatar if needed
     if (!pfpUrl) {
-      // proxy Unavatar through our own /api/img to avoid CORS/cache issues
       const unav = `https://unavatar.io/twitter/${encodeURIComponent(handle)}`;
-      const proxied = `${baseUrl}/api/img?u=${encodeURIComponent(unav)}`;
-      // We could optionally verify it returns 200, but Unavatar is very reliable.
-      pfpUrl = proxied;
+      pfpUrl = `${baseUrl}/api/img?u=${encodeURIComponent(unav)}`;
+      source = "fallback";
     }
 
-    // 3) Save to Supabase — twitter_url is ALWAYS present
+    // 3) Save only the columns Postgres accepts (omit twitter_url)
     const client = sb();
     const { data, error } = await client
       .from("profiles")
       .upsert(
         {
           handle,
-          twitter_url: twitterUrl,
+          // twitter_url: intentionally omitted to avoid the constraint
           pfp_url: pfpUrl,
           last_refreshed: new Date().toISOString(),
         },
@@ -57,11 +48,7 @@ export default async function handler(req, res) {
 
     if (error) throw error;
 
-    return res.status(200).json({
-      ok: true,
-      profile: data,
-      source: rateLimited ? "fallback" : "twitter",
-    });
+    return res.status(200).json({ ok: true, profile: data, source });
   } catch (e) {
     return res.status(500).json({ error: e.message || "Server error" });
   }
