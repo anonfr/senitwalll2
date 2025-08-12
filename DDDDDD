@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Aztec Wall</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+  <meta name="theme-color" content="#121528" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/svg+xml"
+    href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="%236f6ce8"/><rect x="18" y="18" width="28" height="28" rx="6" fill="%23ffffff"/></svg>' />
+</head>
+<body>
+     <div class="wrap">
+    <h1>Aztec Wall</h1>
+    <p class="lead">Submit your X handle. Join Aztec Family Wall</p>
+
+    <form id="form" class="controls" autocomplete="off">
+      <input id="handle" type="text" inputmode="text" placeholder="@handle" />
+      <button id="submitBtn" type="submit">Submit</button>
+    </form>
+
+    <div class="music-btn-wrapper">
+  <button id="musicToggle" type="button" class="music-btn">
+    <span class="icon">🎵</span> <span class="label">Play Music</span>
+  </button>
+</div>
+
+<audio id="bgMusic" src="/audio/aztec-theme.mp3" preload="auto" loop></audio>
+    <div id="msg" class="msg"></div>
+    <div class="stage">
+      <section id="wall" aria-live="polite"></section>
+    </div>
+  </div>
+
+  <a class="credit" href="https://x.com/seuncoded" target="_blank" rel="noopener">Built by @seuncoded</a>
+  <script src="app.js" defer></script>
+</body>
+</html>
+
+That’s current html
+
+
+:root{
+  /* Brand */
+  --aztec:#6f6ce8;           
+  --ink:#0f1330;
+  --muted:#636e95;
+
+  /* Dynamic stage palette */
+  --stage-0:#0b0f16;
+  --stage-1:#132242;
+  --stage-2:#1a2450;
+
+  /* UI */
+  --border:#1d2340;
+  --shadow:0 8px 22px rgba(0,0,0,.35);
+}
+*{ box-sizing:border-box }
+
+/* Page (static background, no animation) */
+html, body{
+  height:100%;
+  margin:0;
+  color:var(--ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial;
+  background:
+    radial-gradient(1100px 700px at 0% -20%, var(--stage-1) 0%, var(--stage-0) 45%),
+    radial-gradient(900px 600px at 120% 120%, var(--stage-2) 0%, transparent 60%),
+    var(--stage-0);
+  /* NOTE: no animation/filter on body so children don’t color‑shift */
+}
+
+/* Center the heading + subtext */
+.wrap {
+  max-width: 1200px;
+  margin: 28px auto 100px;
+  padding: 0 16px;
+  text-align: center; /* Center everything inside wrap */
+}
+
+/* Eye-catching title */
+h1 {
+  margin: 0 0 10px;
+  font-size: 54px; /* Bigger */
+  font-weight: 900;
+  letter-spacing: .3px;
+  background: linear-gradient(90deg, #8e2de2, #4a00e0); /* Purple gradient */
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Subtitle under title */
+.lead {
+  margin: 0 0 25px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #cfd6ff; /* Softer but still visible */
+}
+
+/* Controls */
+.controls{ display:flex; gap:10px; align-items:center; margin:12px 0 10px }
+.controls input{
+  flex:1; padding:12px 14px; border-radius:12px; outline:none;
+  background:#f3f4fb; color:var(--ink);
+  border:1px solid #e6e8f3; font-size:15px;
+}
+.controls button{
+  padding:11px 16px; border-radius:12px; cursor:pointer; border:1px solid transparent;
+  background:linear-gradient(180deg, #7c79ff, var(--aztec));
+  color:#fff; font-weight:800; letter-spacing:.2px; transition:transform .15s ease, filter .15s ease;
+  box-shadow:0 8px 18px rgba(111,108,232,.25);
+}
+.controls button:hover{ filter:brightness(1.06); transform:translateY(-1px) }
+
+.msg{ min-height:18px; font-size:13px; color:#b86; margin:4px 2px }
+
+/* ===== Dynamic container (animation isolated via pseudo‑elements) ===== */
+.stage{
+  position:relative;
+  border-radius:18px;
+  padding:18px;
+  border:1px solid #e9ecf8;
+  overflow:hidden;
+  min-height:60vh;
+  background: var(--stage-0); /* solid base; animation lives on ::before/::after */
+}
+
+/* Moving gradient layers behind content */
+.stage::before,
+.stage::after{
+  content:"";
+  position:absolute; inset:-12% -12%;
+  z-index:0; pointer-events:none;
+  background: transparent;
+  animation: stageMove 22s ease-in-out infinite alternate;
+}
+.stage::before{
+  background:
+    radial-gradient(1100px 700px at 0% -20%, var(--stage-1) 0%, transparent 55%);
+}
+.stage::after{
+  background:
+    radial-gradient(900px 600px at 120% 120%, var(--stage-2) 0%, transparent 60%);
+  animation-duration: 26s; /* slight desync */
+}
+
+/* Content sits above the animated layers */
+#wall, .card{ position:relative; z-index:1 }
+
+/* Only move background positions; no hue-rotate anywhere */
+@keyframes stageMove{
+  0%   { background-position: 0% 0%; }
+  50%  { background-position: 12% -8%; }
+  100% { background-position: 24% -14%; }
+}
+
+/* Free‑floating area size */
+#wall{ position:relative; height:calc(70vh); min-height:420px; }
+
+/* Cards (fixed colors, no bleed from background) */
+.card{
+  position:absolute; display:block; width:118px; border-radius:14px; text-decoration:none; color:#e9ecff;
+  background: linear-gradient(180deg, #11172d, #0c1226); /* fixed gradient */
+  border:1px solid var(--border); overflow:hidden; box-shadow:var(--shadow);
+  will-change: transform;
+}
+.pfp{ width:100%; aspect-ratio:1/1; background:#0c1226; overflow:hidden }
+.pfp img{ width:100%; height:100%; object-fit:cover; display:block }
+.caption{ padding:6px 8px; background:#0b1124 }
+.handle{
+  display:block; font-weight:900; padding:4px 6px; background:#0f1a39; border:1px solid #1d2952;
+  border-radius:8px; color:#dbe0ff; max-width:100%;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:12px;
+}
+
+/* Builder credit */
+.credit{
+  position:fixed; left:50%; transform:translateX(-50%);
+  bottom:12px; background:#101632; color:#cfd6ff;
+  border:1px solid #22305d; padding:7px 10px; border-radius:999px; font-size:12px; font-weight:800;
+  text-decoration:none; box-shadow:0 6px 18px rgba(0,0,0,.35);
+}
+
+/* Motion accessibility */
+@media (prefers-reduced-motion: reduce){
+  .stage::before, .stage::after{ animation:none !important; }
+}
+
+.music-btn-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.music-btn {
+  background: linear-gradient(135deg, #6f6ce8, #4d4acb);
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 100px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.music-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+
+.music-btn .icon {
+  font-size: 16px;
+}
+
+.music-btn.playing {
+  background: linear-gradient(135deg, #ff7676, #d93b3b);
+}
+
+
+That’s is current css file
+
+
+
+    const wall = document.getElementById('wall');
+    const msg  = document.getElementById('msg');
+    const btn  = document.getElementById('submitBtn');
+
+    async function fetchList(){
+      const r = await fetch('/api/list', { cache:'no-store' });
+      if (!r.ok) throw new Error('list failed');
+      return r.json();
+    }
+
+    function cardNode(item){
+      const url = item.twitter_url || `https://twitter.com/${item.handle}`;
+      const pfp = item.pfp_url || '';
+      const handle = item.handle ? '@'+item.handle : '';
+
+      const a = document.createElement('a');
+      a.className = 'card';
+      a.href = url; a.target = '_blank'; a.rel = 'noopener';
+      a.innerHTML = `
+        <div class="pfp"><img src="${pfp}" alt="${handle}'s avatar" loading="lazy"></div>
+        <div class="caption"><span class="handle">${handle}</span></div>
+      `;
+      return a;
+    }
+
+
+    function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
+    function rotate(arr){
+      if(!arr.length) return arr;
+      const key='aztec_pfp_wall_rot';
+      const prev=parseInt(sessionStorage.getItem(key)||'0',10)||0;
+      const off=(prev+3)%arr.length;
+      sessionStorage.setItem(key, String(off));
+      return arr.slice(off).concat(arr.slice(0,off));
+    }
+
+
+    function random(min,max){ return Math.random()*(max-min)+min; }
+
+
+    function floatCard(el, stage){
+      const W = stage.clientWidth  - el.clientWidth;
+      const H = stage.clientHeight - el.clientHeight;
+
+      function hop(){
+        const x = random(0, W);
+        const y = random(0, H);
+        const d = random(10, 18);        
+        el.animate(
+          [{ transform:`translate(${x}px, ${y}px)` }],
+          { duration: d*1000, easing: 'ease-in-out', fill: 'forwards' }
+        ).finished.then(hop).catch(()=>{});
+      }
+   
+      el.style.transform = `translate(${random(0,W)}px, ${random(0,H)}px)`;
+      
+      setTimeout(hop, random(100, 1200));
+    }
+
+    async function render(){
+      msg.textContent = '';
+      try {
+        let data = await fetchList();
+        if (!Array.isArray(data) || !data.length){
+          wall.innerHTML = '<div style="color:#c8cff9;padding:20px">No cards yet. Be the first!</div>';
+          return;
+        }
+        data = rotate(shuffle(data));
+
+        
+        wall.innerHTML = '';
+        const frag = document.createDocumentFragment();
+        data.forEach(item => {
+          const el = cardNode(item);
+          frag.appendChild(el);
+        });
+        wall.appendChild(frag);
+
+        
+        const cards = wall.querySelectorAll('.card');
+        cards.forEach(el => floatCard(el, wall));
+
+       
+        let t; window.addEventListener('resize', ()=>{ clearTimeout(t); t=setTimeout(()=>{
+          cards.forEach(el => floatCard(el, wall));
+        }, 200); });
+
+      } catch(e){
+        msg.textContent = 'Failed to load. Refresh to try again.';
+      }
+    }
+
+    document.getElementById('form').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const raw = document.getElementById('handle').value;
+      const handle = String(raw).trim().replace(/^@+/, '');
+      if(!handle){ msg.textContent = 'Enter a handle'; return; }
+      btn.disabled = true; btn.textContent = 'Submitting…'; msg.textContent = '';
+
+      try {
+        const r = await fetch('/api/submit', {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify({ handle })
+        });
+        const j = await r.json();
+        if(!r.ok || !j.ok){
+          msg.textContent = j?.error || 'Could not fetch PFP';
+        } else {
+          document.getElementById('form').reset();
+          await render();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      } catch (err){
+        msg.textContent = 'Network error';
+      } finally {
+        btn.disabled = false; btn.textContent = 'Submit';
+      }
+    });
+
+    render();
+
+
+  const music = document.getElementById('bgMusic');
+  const toggle = document.getElementById('musicToggle');
+
+  toggle.addEventListener('click', () => {
+    if (music.paused) {
+      music.play();
+      toggle.classList.add('playing');
+      toggle.querySelector('.label').textContent = 'Pause Music';
+    } else {
+      music.pause();
+      toggle.classList.remove('playing');
+      toggle.querySelector('.label').textContent = 'Play Music';
+    }
+  });
+
+
+That’s current Js file
+
+
+
+import { sb } from "./_supabase.js";
+
+const cleanHandle = h => h?.trim().replace(/^@+/, "").toLowerCase() || "";
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
+  try {
+    const { handle } = req.body || {};
+    const h = cleanHandle(handle);
+    if (!h) return res.status(400).json({ error: "Invalid handle" });
+
+    const baseUrl = `${req.headers["x-forwarded-proto"] || "https"}://${req.headers.host}`;
+    const r = await fetch(`${baseUrl}/api/twitter-pfp?u=${encodeURIComponent(h)}`);
+    if (!r.ok) return res.status(400).json({ error: "Could not fetch PFP" });
+    const { url: pfp } = await r.json();
+
+    const client = sb();
+    const { data, error } = await client
+      .from("profiles")
+      .upsert({
+        handle: h,
+        pfp_url: pfp,
+        last_refreshed: new Date().toISOString()
+      }, { onConflict: "handle" })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return res.status(200).json({ ok: true, profile: data });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+}
+That’s current submit.js
+
+
+import { sb } from "./_supabase.js";
+
+export default async function handler(req, res) {
+  try {
+    const client = sb();
+    const { data, error } = await client
+      .from("profiles")
+      .select("id, handle, website, twitter_url, pfp_url, created_at")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    res.setHeader("Cache-Control", "s-maxage=120, stale-while-revalidate=1800");
+    return res.status(200).json(data || []);
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+}
+That’s current list.js
+
+
+// api/_db.js
+let items = []; // { id, handle, twitter_url, pfp_url, created_at }
+
+export function all(){
+  return items;
+}
+export function addUnique(item){
+  const id = item.id || item.handle;
+  const i = items.findIndex(x => (x.id||x.handle) === id);
+  if (i >= 0) {
+    // update PFP if changed
+    items[i] = { ...items[i], ...item };
+    return items[i];
+  }
+  items.push(item);
+  return item;
+}
+
+That’s current _db.js 
