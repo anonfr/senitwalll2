@@ -9,20 +9,19 @@ export default async function handler(req, res) {
     const h = cleanHandle(handle);
     if (!h) return res.status(400).json({ error: "Invalid handle" });
 
-    // Use Unavatar directly
-    const pfp = `https://unavatar.io/twitter/${encodeURIComponent(h)}`;
+    const baseUrl = `${req.headers["x-forwarded-proto"] || "https"}://${req.headers.host}`;
+    const r = await fetch(`${baseUrl}/api/twitter-pfp?u=${encodeURIComponent(h)}`);
+    if (!r.ok) return res.status(400).json({ error: "Could not fetch PFP" });
+    const { url: pfp } = await r.json();
 
     const client = sb();
     const { data, error } = await client
       .from("profiles")
-      .upsert(
-        {
-          handle: h,
-          pfp_url: pfp,                     // ✅ just store the unavatar URL
-          last_refreshed: new Date().toISOString()
-        },
-        { onConflict: "handle" }
-      )
+      .upsert({
+        handle: h,
+        pfp_url: pfp,
+        last_refreshed: new Date().toISOString()
+      }, { onConflict: "handle" })
       .select()
       .single();
 
