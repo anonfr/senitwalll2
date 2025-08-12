@@ -75,11 +75,13 @@
         const capY = (by > 0 ? maxDown  : maxUp);
 
         // 0.3–0.7 of available space so it can travel visibly
-        const dx = (capX * (0.3 + Math.random()*0.4)) * bx;
-        const dy = (capY * (0.3 + Math.random()*0.4)) * by;
+// BIGGER TRAVEL: 0.6–0.9 of available space
+const dx = (capX * (0.6 + Math.random()*0.3)) * bx;
+const dy = (capY * (0.6 + Math.random()*0.3)) * by;
 
-        const dur   = (3 + Math.random() * 5).toFixed(2); // faster 3..8s
-        const delay = (Math.random() * 3).toFixed(2);     // 0..3s
+// FASTER: 1.2–3.0s per cycle, smaller delay for snappier feel
+const dur   = (1.2 + Math.random() * 1.8).toFixed(2); // 1.2..3.0s
+const delay = (Math.random() * 1).toFixed(2);         // 0..1s
         const r0 = ((Math.random() * 1.5) - 0.75).toFixed(2) + 'deg';
         const r1 = ((Math.random() * 2.0) - 1.0).toFixed(2) + 'deg';
 
