@@ -53,8 +53,8 @@
         // Give each card its own random drifting vector and timing
         const cards = wall.querySelectorAll('.card');
         cards.forEach((el) => {
-          const dx = (Math.random() * 24 - 12).toFixed(1); // -12..12px
-          const dy = (Math.random() * 24 - 12).toFixed(1); // -12..12px
+          const dx = (Math.random() * 80 - 40).toFixed(1); // -12..12px
+          const dy = (Math.random() * 80 - 40).toFixed(1); // -12..12px
           const dur = (3 + Math.random() * 4).toFixed(2);  // 7..14s
           const delay = (Math.random() * 4).toFixed(2);    // 0..4s
           el.style.setProperty('--dx', `${dx}px`);
