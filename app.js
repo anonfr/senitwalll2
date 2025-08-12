@@ -141,3 +141,67 @@ document.addEventListener('DOMContentLoaded', () => {
     // Browser blocked autoplay — wait for user click
   });
 });
+
+
+
+
+
+
+  const music = document.getElementById('bgMusic');
+  const toggle = document.getElementById('musicToggle');
+  const PREF_KEY = 'aztec_wall_music';
+
+  // restore preference
+  const pref = localStorage.getItem(PREF_KEY); // 'on' | 'off' | null
+  music.volume = 0.35;
+
+  // Try autoplay muted (allowed by browsers)
+  (async () => {
+    try { await music.play(); } catch {}
+    // If user previously chose ON, wait for a gesture then unmute
+    if (pref === 'on') armFirstGestureToUnmute();
+    updateButton();
+  })();
+
+  function armFirstGestureToUnmute(){
+    const onceUnmute = async () => {
+      try {
+        music.muted = false;
+        await music.play();
+        updateButton();
+      } catch {}
+      removeGestureListeners();
+    };
+    document.addEventListener('click', onceUnmute, { once:true, passive:true });
+    document.addEventListener('touchstart', onceUnmute, { once:true, passive:true });
+    document.addEventListener('keydown', onceUnmute, { once:true });
+  }
+  function removeGestureListeners(){
+    document.removeEventListener('click', armFirstGestureToUnmute);
+    document.removeEventListener('touchstart', armFirstGestureToUnmute);
+    document.removeEventListener('keydown', armFirstGestureToUnmute);
+  }
+
+  function updateButton(){
+    toggle.textContent = music.muted || music.paused ? '🔊 Play Music' : '🔇 Mute Music';
+  }
+
+  // Button behavior: toggle mute and remember choice
+  toggle.addEventListener('click', async () => {
+    if (music.paused) {
+      try { await music.play(); } catch {}
+    }
+    music.muted = !music.muted;
+    localStorage.setItem(PREF_KEY, music.muted ? 'off' : 'on');
+    updateButton();
+  });
+
+  // On first user interaction, if no pref set, unmute once
+  if (!pref) armFirstGestureToUnmute();
+
+  // iOS quirks: keep playing when tab visible, pause when hidden
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { music.pause(); }
+    else { music.play().catch(()=>{}); }
+  });
+
