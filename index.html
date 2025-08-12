@@ -69,26 +69,40 @@
   .hint { color:#a9b0d6; font-size:13px; margin:8px 0 0 4px; }
 
   /* Card: smaller, with interactive float */
-  .card{
-    position:absolute; width:150px; height:190px;
-    border:1px solid #ffffff1f; border-radius:16px; overflow:hidden; background:#0f1530;
-    box-shadow:0 12px 30px rgba(0,0,0,.35);
-    will-change: transform;
-    animation: float var(--dur,8s) ease-in-out infinite;
-    transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
-  }
-  .card:hover{
-    transform: translate3d(0,0,0) scale(1.04) rotateZ(var(--tilt,0deg));
-    box-shadow:0 18px 38px rgba(0,0,0,.45);
-    filter: brightness(1.05);
-    animation-play-state: paused; /* pause drift while hovered */
-  }
+/* Card: now an <a> (clickable) */
+.card{
+  position:absolute; width:150px; height:190px;
+  border:1px solid #ffffff1f; border-radius:16px; overflow:hidden; background:#0f1530;
+  box-shadow:0 12px 30px rgba(0,0,0,.35);
+  will-change: transform;
+  animation: float var(--dur,8s) ease-in-out infinite;
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+  text-decoration:none;               /* remove link underline */
+  cursor:pointer;                     /* show hand cursor */
+  color:#e6eaff;                      /* text color inside anchor */
+}
+.card:hover{
+  transform: translate3d(0,0,0) scale(1.04) rotateZ(var(--tilt,0deg));
+  box-shadow:0 18px 38px rgba(0,0,0,.45);
+  filter: brightness(1.05);
+  animation-play-state: paused;
+}
+.pfp{ height:132px; background:#000; }
+.pfp img{ width:100%; height:100%; object-fit:cover; display:block; }
+.body{ padding:8px 10px; }
+.name{ font-weight:900; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* Mobile: shrink cards so more fit */
+@media (max-width: 640px){
+  .card{ width:130px; height:170px; }
+  .pfp{ height:118px; }
+  .name{ font-size:13px; }
+}
   .pfp{ height:132px; background:#000; }
   .pfp img{ width:100%; height:100%; object-fit:cover; display:block; }
   .body{ padding:8px 10px; }
   .name{ font-weight:900; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#e6eaff; }
-  .link{ display:inline-block; margin-top:4px; font-size:12px; font-weight:800; color:#cfd5ff; text-decoration:none;
-         background:#2a2f66; border:1px solid #ffffff22; padding:4px 8px; border-radius:10px; }
+
 
   /* Float path (varied per card via CSS vars) */
   @keyframes float {
@@ -137,17 +151,73 @@ async function fetchList(){
 
 function cardHtml(p, left, top, dx, dy, delay, dur, tilt){
   return `
-  <article class="card"
-    style="left:${left}px; top:${top}px;
-           --dx:${dx}px; --dy:${dy}px;
-           --tilt:${tilt}deg;
-           animation-delay:${delay}s; --dur:${dur}s">
+  <a class="card"
+     href="${p.twitter_url}" target="_blank" rel="noopener"
+     style="left:${left}px; top:${top}px;
+            --dx:${dx}px; --dy:${dy}px;
+            --tilt:${tilt}deg;
+            animation-delay:${delay}s; --dur:${dur}s">
     <div class="pfp"><img src="${p.pfp_url}" alt="@${p.handle}" loading="lazy"></div>
     <div class="body">
       <div class="name">@${p.handle}</div>
-      <a class="link" href="${p.twitter_url}" target="_blank" rel="noopener">Profile</a>
     </div>
-  </article>`;
+  </a>`;
+}
+
+function layoutCards(items){
+  const canvas = document.getElementById('canvas');
+  const W = canvas.clientWidth, H = canvas.clientHeight;
+
+  // Read current card size from CSS (matches media queries)
+  const cardProbe = document.createElement('div');
+  cardProbe.className = 'card';
+  cardProbe.style.visibility = 'hidden';
+  cardProbe.style.position = 'absolute';
+  canvas.appendChild(cardProbe);
+  const cw = Math.round(cardProbe.clientWidth)  || 150;
+  const ch = Math.round(cardProbe.clientHeight) || 190;
+  canvas.removeChild(cardProbe);
+
+  const pad = 14;
+
+  const cols = Math.max(1, Math.floor((W - pad) / (cw + pad)));
+  const rows = Math.max(1, Math.floor((H - pad) / (ch + pad)));
+
+  const spots = [];
+  for(let r=0; r<rows; r++){
+    for(let c=0; c<cols; c++){
+      const x = pad + c*(cw+pad);
+      const y = pad + r*(ch+pad);
+      spots.push([x,y]);
+    }
+  }
+
+  // randomize spots
+  const order = spots.slice().sort(() => Math.random()-0.5);
+
+  let html = '';
+  const n = items.length;
+  const cap = Math.max(1, order.length);
+
+  for(let i=0;i<n;i++){
+    // Always place something, even if we exceed capacity: reuse a spot with slight offset
+    const base = order[i % cap] || [pad, pad];
+    const wrap = Math.floor(i / cap); // how many times we've wrapped
+    const jitterX = (wrap * 10) * (i % 2 ? 1 : -1);
+    const jitterY = (wrap * 12);
+
+    const left = Math.min(Math.max(base[0] + jitterX, pad), Math.max(pad, W - cw - pad));
+    const top  = Math.min(Math.max(base[1] + jitterY, pad), Math.max(pad, H - ch - pad));
+
+    const dx   = Math.round(Math.random()*18 - 9);
+    const dy   = Math.round(Math.random()*24 - 12);
+    const delay= +(Math.random()*4).toFixed(2);
+    const dur  = 7 + Math.round(Math.random()*4);
+    const tilt = Math.round(Math.random()*2 - 1) * 2;
+
+    html += cardHtml(items[i], left, top, dx, dy, delay, dur, tilt);
+  }
+  canvas.innerHTML = html;
 }
 
 /* pack cards into a coarse grid to avoid overlaps, then add drift */
