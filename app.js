@@ -1,9 +1,7 @@
-
-    const stage = document.getElementById('stage');
+const stage = document.getElementById('stage');
     const msg   = document.getElementById('msg');
     const btn   = document.getElementById('submitBtn');
 
-    /* Helpers */
     const cssNum = (el, prop) => parseFloat(getComputedStyle(el).getPropertyValue(prop));
     const clamp  = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
@@ -36,8 +34,8 @@
       `;
     }
 
-    // Place each card absolutely within the stage and give it its own drift
-    function layoutFreeFloat(){
+    // Position cards randomly within stage
+    function scatterCards(){
       const cards = stage.querySelectorAll('.card');
       if (!cards.length) return;
 
@@ -48,51 +46,92 @@
       const cw = cssNum(document.documentElement, '--card-w') || 110;
       const ch = cssNum(document.documentElement, '--card-h') || 140;
 
-      cards.forEach((el, i) => {
-        // BASE POSITION: random anywhere that fits (respect padding & card size)
+      cards.forEach((el) => {
         const left = Math.random() * (W - cw - 2*pad) + pad;
         const top  = Math.random() * (H - ch - 2*pad) + pad;
-
-        // TARGET DISPLACEMENT: big wander, but clamp so it stays inside bounds
-        const maxRight = (W - pad) - (left + cw);       // space to the right
-        const maxLeft  = (left - pad);                  // space to the left
-        const maxDown  = (H - pad) - (top + ch);        // space downward
-        const maxUp    = (top - pad);                   // space upward
-
-        // pick a direction bias so not all go diagonally the same way
-        const biasX = (Math.random() < 0.5 ? -1 : 1);
-        const biasY = (Math.random() < 0.5 ? -1 : 1);
-
-        // choose magnitude using 30–70% of the room available in that direction
-        const roomX = biasX > 0 ? maxRight : maxLeft;
-        const roomY = biasY > 0 ? maxDown  : maxUp;
-
-        // If there's no room in one direction, flip bias
-        const bx = roomX <= 8 ? -biasX : biasX;
-        const by = roomY <= 8 ? -biasY : biasY;
-
-        const capX = (bx > 0 ? maxRight : maxLeft);
-        const capY = (by > 0 ? maxDown  : maxUp);
-
-        // 0.3–0.7 of available space so it can travel visibly
-// BIGGER TRAVEL: 0.6–0.9 of available space
-const dx = (capX * (0.6 + Math.random()*0.3)) * bx;
-const dy = (capY * (0.6 + Math.random()*0.3)) * by;
-
-// FASTER: 1.2–3.0s per cycle, smaller delay for snappier feel
-const dur   = (1.2 + Math.random() * 1.8).toFixed(2); // 1.2..3.0s
-const delay = (Math.random() * 1).toFixed(2);         // 0..1s
-        const r0 = ((Math.random() * 1.5) - 0.75).toFixed(2) + 'deg';
-        const r1 = ((Math.random() * 2.0) - 1.0).toFixed(2) + 'deg';
-
         el.style.left = `${clamp(left, pad, W - cw - pad)}px`;
         el.style.top  = `${clamp(top , pad, H - ch - pad)}px`;
-        el.style.setProperty('--dx', `${dx.toFixed(1)}px`);
-        el.style.setProperty('--dy', `${dy.toFixed(1)}px`);
-        el.style.setProperty('--dur', `${dur}s`);
-        el.style.setProperty('--delay', `${delay}s`);
-        el.style.setProperty('--r0', r0);
-        el.style.setProperty('--r1', r1);
+
+        // Clear any ongoing transform so we start from anchor
+        el.style.transform = 'translate3d(0,0,0)';
+      });
+    }
+
+    // Pick a new target offset and animate there via CSS transitions.
+    // When the transition ends, pick a new target (so directions keep changing).
+    function startWander(){
+      const cards = stage.querySelectorAll('.card');
+      if (!cards.length) return;
+
+      const pad = 10;
+      const W = stage.clientWidth;
+      const H = stage.clientHeight;
+
+      const cw = cssNum(document.documentElement, '--card-w') || 110;
+      const ch = cssNum(document.documentElement, '--card-h') || 140;
+
+      cards.forEach((el, idx) => {
+        // Keep a per-card wander loop
+        const wander = () => {
+          const left = parseFloat(el.style.left || '0');
+          const top  = parseFloat(el.style.top  || '0');
+
+          const maxRight = (W - pad) - (left + cw);
+          const maxLeft  = (left - pad);
+          const maxDown  = (H - pad) - (top + ch);
+          const maxUp    = (top - pad);
+
+          // Pick a random target offset within 35–65% of available space
+          const pick = (negRoom, posRoom) => {
+            const goNeg = Math.random() < 0.5;
+            const room  = goNeg ? negRoom : posRoom;
+            const frac  = 0.35 + Math.random()*0.30; // 35..65%
+            let delta   = room * frac;
+            if (goNeg) delta = -delta;
+            // If almost no room, flip
+            if (Math.abs(delta) < 8) delta = -delta;
+            return delta;
+          };
+
+          const dx = pick(maxLeft, maxRight);
+          const dy = pick(maxUp,   maxDown);
+
+          // Slower, calmer: 3.6–7.2s per leg, a tiny random delay 0–0.6s
+          const dur   = (3.6 + Math.random() * 3.6).toFixed(2); // 3.6..7.2s
+          const delay = (Math.random() * 0.6).toFixed(2);       // 0..0.6s
+
+          // Tiny rotation wobble each leg (optional)
+          const r = ((Math.random() * 2.0) - 1.0).toFixed(2);   // -1..1deg
+
+          el.style.setProperty('--dur', `${dur}s`);
+          el.style.transitionDuration = `${dur}s`;
+          el.style.transitionDelay = `${delay}s`;
+          el.style.transform = `translate3d(${dx.toFixed(1)}px, ${dy.toFixed(1)}px, 0) rotate(${r}deg)`;
+        };
+
+        // Kick off with slight stagger so not all move at once
+        setTimeout(wander, Math.random()*800);
+
+        // On every transition end, choose a new target
+        el.addEventListener('transitionend', (ev)=>{
+          // Only react to transform transitions
+          if (ev.propertyName !== 'transform') return;
+          // Snap current transform as new base by updating left/top and resetting transform.
+          const m = el.style.transform.match(/translate3d\(([-\d.]+)px,\s*([-\d.]+)px/);
+          if (m){
+            const dx = parseFloat(m[1] || '0');
+            const dy = parseFloat(m[2] || '0');
+            const left = parseFloat(el.style.left || '0');
+            const top  = parseFloat(el.style.top  || '0');
+            el.style.left = `${clamp(left + dx, pad, W - cw - pad)}px`;
+            el.style.top  = `${clamp(top  + dy, pad, H - ch - pad)}px`;
+          }
+          el.style.transitionDelay = '0s';
+          el.style.transform = 'translate3d(0,0,0) rotate(0deg)';
+
+          // Next leg
+          requestAnimationFrame(()=> requestAnimationFrame(wander));
+        }, { passive:true });
       });
     }
 
@@ -122,21 +161,23 @@ const delay = (Math.random() * 1).toFixed(2);         // 0..1s
         }
         data = rotate(shuffle(data));
         stage.innerHTML = data.map(cardHtml).join('');
-        // after painting to DOM, compute positions and drift per card
-        layoutFreeFloat();
+        scatterCards();   // random anchors
+        startWander();    // continuous direction changes
       }catch(e){
         msg.textContent = 'Failed to load. Refresh to try again.';
       }
     }
 
-    // Recompute on resize (throttle)
+    // Re-scatter and keep wandering on resize/orientation change
     let resizeTimer = null;
     window.addEventListener('resize', ()=>{
       if(resizeTimer) cancelAnimationFrame(resizeTimer);
-      resizeTimer = requestAnimationFrame(layoutFreeFloat);
+      resizeTimer = requestAnimationFrame(()=>{
+        scatterCards();
+        // no need to rebind listeners; cards keep wandering from new anchors
+      });
     });
 
-    // Submit
     document.getElementById('form').addEventListener('submit', async (e)=>{
       e.preventDefault();
       const raw = document.getElementById('handle').value;
@@ -155,6 +196,5 @@ const delay = (Math.random() * 1).toFixed(2);         // 0..1s
       }
     });
 
-    // Boot
     render();
   
