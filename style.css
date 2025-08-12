@@ -123,6 +123,7 @@ h1 {
   will-change: transform;
 }
 .pfp{ width:100%; aspect-ratio:1/1; background:#0c1226; overflow:hidden }
+.pfp.no-pfp { background:#0f1a39; }
 .pfp img{ width:100%; height:100%; object-fit:cover; display:block }
 .caption{ padding:6px 8px; background:#0b1124 }
 .handle{

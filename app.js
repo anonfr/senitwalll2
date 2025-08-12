@@ -9,20 +9,23 @@
       return r.json();
     }
 
-    function cardNode(item){
-      const url = item.twitter_url || `https://twitter.com/${item.handle}`;
-      const pfp = item.pfp_url || '';
-      const handle = item.handle ? '@'+item.handle : '';
+function cardNode(item){
+  const url = item.twitter_url || `https://twitter.com/${item.handle}`;
+  const handle = item.handle ? '@' + item.handle : '';
+  const pfp = item.handle ? `https://unavatar.io/twitter/${encodeURIComponent(item.handle)}` : '';
 
-      const a = document.createElement('a');
-      a.className = 'card';
-      a.href = url; a.target = '_blank'; a.rel = 'noopener';
-      a.innerHTML = `
-        <div class="pfp"><img src="${pfp}" alt="${handle}'s avatar" loading="lazy"></div>
-        <div class="caption"><span class="handle">${handle}</span></div>
-      `;
-      return a;
-    }
+  const a = document.createElement('a');
+  a.className = 'card';
+  a.href = url; a.target = '_blank'; a.rel = 'noopener';
+  a.innerHTML = `
+    <div class="pfp">
+      <img src="${pfp}" alt="${handle}'s avatar" loading="lazy"
+           onerror="this.style.display='none'; this.closest('.pfp').classList.add('no-pfp')">
+    </div>
+    <div class="caption"><span class="handle">${handle}</span></div>
+  `;
+  return a;
+}
 
 
     function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
@@ -137,5 +140,6 @@
     }
   });
 
+  
 
 

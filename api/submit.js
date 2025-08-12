@@ -1,33 +1,40 @@
+// /api/submit.js
 import { sb } from "./_supabase.js";
 
-const cleanHandle = h => h?.trim().replace(/^@+/, "").toLowerCase() || "";
+const cleanHandle = (h) => h?.trim().replace(/^@+/, "").toLowerCase() || "";
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
+  if (req.method !== "POST") {
+    return res.status(405).json({ ok: false, error: "POST only" });
+  }
+
   try {
     const { handle } = req.body || {};
     const h = cleanHandle(handle);
-    if (!h) return res.status(400).json({ error: "Invalid handle" });
+    if (!h) return res.status(400).json({ ok: false, error: "Invalid handle" });
 
-    const baseUrl = `${req.headers["x-forwarded-proto"] || "https"}://${req.headers.host}`;
-    const r = await fetch(`${baseUrl}/api/twitter-pfp?u=${encodeURIComponent(h)}`);
-    if (!r.ok) return res.status(400).json({ error: "Could not fetch PFP" });
-    const { url: pfp } = await r.json();
+    // Build an Unavatar URL (no API key needed)
+    const pfp = `https://unavatar.io/twitter/${encodeURIComponent(h)}`;
 
     const client = sb();
     const { data, error } = await client
       .from("profiles")
-      .upsert({
-        handle: h,
-        pfp_url: pfp,
-        last_refreshed: new Date().toISOString()
-      }, { onConflict: "handle" })
+      .upsert(
+        {
+          handle: h,
+          twitter_url: `https://twitter.com/${h}`,
+          pfp_url: pfp,
+          last_refreshed: new Date().toISOString(),
+        },
+        { onConflict: "handle" } // requires UNIQUE(handle)
+      )
       .select()
       .single();
 
     if (error) throw error;
+    res.setHeader("Cache-Control", "no-store");
     return res.status(200).json({ ok: true, profile: data });
   } catch (e) {
-    return res.status(500).json({ error: e.message });
+    return res.status(500).json({ ok: false, error: e.message });
   }
 }
