@@ -16,8 +16,18 @@
     *{box-sizing:border-box}
 
    
-    html,body{height:100%}
-    body{ margin:0; background:#354de6; color:var(--ink); font-family: ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial }
+  html, body {
+  height: 100%;
+  margin: 0;
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial;
+  /* Match the container background */
+  background:
+    radial-gradient(1100px 700px at 0% -20%, var(--stage-1) 0%, var(--stage-0) 45%),
+    radial-gradient(900px 600px at 120% 120%, var(--stage-2) 0%, transparent 60%),
+    var(--stage-0);
+  animation: stageMove 22s ease-in-out infinite alternate;
+}
 
     .wrap{ max-width:1200px; margin:28px auto 100px; padding:0 16px }
 
