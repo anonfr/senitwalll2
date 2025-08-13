@@ -1,45 +1,69 @@
 // /api/refresh-fallbacks.js
 import { sb } from "./_supabase.js";
 
+function isFallbackUrl(pfp, baseUrl) {
+  if (!pfp) return false;
+
+  // normalize
+  const u = String(pfp).trim();
+
+  // Unavatar fallback (http or https)
+  if (u === "http://unavatar.io/fallback.png" || u === "https://unavatar.io/fallback.png") {
+    return true;
+  }
+
+  // Your default svg (absolute OR relative)
+  if (u === "/img/default-pfp.svg" || u === `${baseUrl}/img/default-pfp.svg`) {
+    return true;
+  }
+
+  // Common proxy patterns that still point to the unavatar fallback
+  // (images.weserv.nl or your own /api/img?u=...)
+  try {
+    const parsed = new URL(u, baseUrl);
+    const host = parsed.host;
+    const target = parsed.searchParams.get("u") || "";
+    if (host.includes("images.weserv.nl") || parsed.pathname.startsWith("/api/img")) {
+      if (target.includes("unavatar.io/fallback.png")) return true;
+      if (target.endsWith("/img/default-pfp.svg")) return true;
+    }
+  } catch {
+    // ignore URL parse errors
+  }
+
+  return false;
+}
+
 export default async function handler(req, res) {
   try {
-    // --- 1) Secure the endpoint
+    // --- auth
     const secret = process.env.REFRESH_SECRET || "";
     const auth = req.headers.authorization || "";
     const qsSecret = req.query.secret || "";
-
     if (secret && auth !== `Bearer ${secret}` && qsSecret !== secret) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    // --- 2) Utilities
-    const client = sb();
     const baseUrl = `${req.headers["x-forwarded-proto"] || "https"}://${req.headers.host}`;
-    const defaultSvg = `${baseUrl}/img/default-pfp.svg`;
+    const client = sb();
 
-    // --- 3) Fetch only rows with fallback images
-    // (either unavatar fallback OR your local default svg)
+    // Pull a limited number to keep it cheap (adjust limit if you like)
     const { data: rows, error } = await client
       .from("profiles")
       .select("id, handle, pfp_url")
-      .or(
-        `pfp_url.eq.http://unavatar.io/fallback.png,pfp_url.eq.${defaultSvg}`
-      );
+      .limit(1000);
 
     if (error) throw error;
 
-    if (!rows || rows.length === 0) {
-      return res.status(200).json({ ok: true, refreshed: 0, note: "Nothing to refresh." });
+    const candidates = (rows || []).filter(r => isFallbackUrl(r.pfp_url, baseUrl));
+    if (candidates.length === 0) {
+      return res.status(200).json({ ok: true, refreshed: 0, note: "No fallback rows matched." });
     }
 
-    // --- 4) Try to refresh each one via your twitter-pfp endpoint
     let refreshed = 0;
-    for (const row of rows) {
+    for (const row of candidates) {
       try {
-        const r = await fetch(
-          `${baseUrl}/api/twitter-pfp?u=${encodeURIComponent(row.handle)}`,
-          { cache: "no-store" }
-        );
+        const r = await fetch(`${baseUrl}/api/twitter-pfp?u=${encodeURIComponent(row.handle)}`, { cache: "no-store" });
         if (!r.ok) continue;
         const j = await r.json();
         const newUrl = j?.url || null;
@@ -52,12 +76,11 @@ export default async function handler(req, res) {
 
         if (!upErr) refreshed++;
       } catch {
-        // ignore individual failures; continue with others
+        // ignore individual failures
       }
     }
 
-    // --- 5) Done
-    return res.status(200).json({ ok: true, refreshed });
+    return res.status(200).json({ ok: true, refreshed, scanned: rows?.length || 0 });
   } catch (e) {
     return res.status(500).json({ error: e.message || "server error" });
   }
