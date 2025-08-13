@@ -7,8 +7,8 @@ const pump = promisify(pipeline);
 const ALLOWED_HOSTS = new Set([
   "pbs.twimg.com",
   "abs.twimg.com",
-  "unavatar.io",    // <- allow Unavatar
-  // "ton.twitter.com", // add if you ever need video thumbs
+  "unavatar.io",
+  "images.weserv.nl"
 ]);
 
 export default async function handler(req, res) {
