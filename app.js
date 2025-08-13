@@ -111,9 +111,19 @@ async function render(){
 
 document.getElementById('form')?.addEventListener('submit', async (e)=>{
   e.preventDefault();
-  const raw = document.getElementById('handle').value;
 
-  if(!handle){ msg && (msg.textContent = 'Enter a handle'); return; }
+  const input = document.getElementById('handle');
+  const raw   = String(input.value || '');
+
+  // Frontend guard: must start with @
+  if (!raw.trim().startsWith('@')) {
+    msg && (msg.textContent = 'Please enter your @handle (must start with @)');
+    return;
+  }
+
+  // DO NOT strip the @ — backend validates it and bans words
+  const payload = { handle: raw };
+
   if(btn){ btn.disabled = true; btn.textContent = 'Submitting…'; }
   msg && (msg.textContent = '');
 
@@ -121,9 +131,10 @@ document.getElementById('form')?.addEventListener('submit', async (e)=>{
     const r = await fetch('/api/submit', {
       method:'POST',
       headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({ handle })
+      body: JSON.stringify(payload)
     });
     const j = await r.json();
+
     if(!r.ok || !j.ok){
       msg && (msg.textContent = j?.error || 'Could not fetch PFP');
     } else {
