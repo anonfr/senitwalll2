@@ -4,31 +4,32 @@ import { sb } from "./_supabase.js";
 function isFallbackUrl(pfp, baseUrl) {
   if (!pfp) return false;
 
-  // normalize
   const u = String(pfp).trim();
 
-  // Unavatar fallback (http or https)
+  // Direct unavatar fallback (http or https)
   if (u === "http://unavatar.io/fallback.png" || u === "https://unavatar.io/fallback.png") {
     return true;
   }
 
-  // Your default svg (absolute OR relative)
+  // Default SVG (absolute or relative)
   if (u === "/img/default-pfp.svg" || u === `${baseUrl}/img/default-pfp.svg`) {
     return true;
   }
 
-  // Common proxy patterns that still point to the unavatar fallback
-  // (images.weserv.nl or your own /api/img?u=...)
+  // images.weserv.nl that points to the unavatar fallback
+  if (u.includes("images.weserv.nl") && decodeURIComponent(u).includes("unavatar.io/fallback.png")) {
+    return true;
+  }
+
+  // Any /api/img?u=... that points to unavatar fallback or default-pfp
   try {
     const parsed = new URL(u, baseUrl);
-    const host = parsed.host;
     const target = parsed.searchParams.get("u") || "";
-    if (host.includes("images.weserv.nl") || parsed.pathname.startsWith("/api/img")) {
-      if (target.includes("unavatar.io/fallback.png")) return true;
-      if (target.endsWith("/img/default-pfp.svg")) return true;
+    if (target.includes("unavatar.io/fallback.png") || target.endsWith("/img/default-pfp.svg")) {
+      return true;
     }
   } catch {
-    // ignore URL parse errors
+    // ignore parse errors
   }
 
   return false;
