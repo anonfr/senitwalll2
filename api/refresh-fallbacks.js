@@ -1,90 +1,96 @@
 // /api/refresh-fallbacks.js
 import { sb } from "./_supabase.js";
 
-const clean = s => s?.trim().replace(/^@+/, "").toLowerCase() || "";
+function origin(req) {
+  return `${req.headers["x-forwarded-proto"] || "https"}://${req.headers.host}`;
+}
+
+function toWeserv(srcUrl, defaultAbs) {
+  const qs = new URLSearchParams({
+    url: srcUrl,
+    default: defaultAbs,
+    w: "400",
+    n: "-1",
+    ttl: "31557600000",
+    l: "9",
+  });
+  return `https://images.weserv.nl/?${qs.toString()}`;
+}
+
+function isBad(url) {
+  if (!url) return true;
+  const u = String(url);
+  return (
+    u.includes("/img/default-pfp.svg") ||   // default
+    u.includes("unavatar.io") ||            // plain unavatar
+    u.includes("/api/img?u=")               // old proxied unavatar
+  );
+}
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "POST only" });
-  }
-
   try {
-    const baseUrl = `${req.headers["x-forwarded-proto"] || "https"}://${req.headers.host}`;
-    const client = sb();
+    const base = origin(req);
+    const defaultAbs = `${base}/img/default-pfp.svg`;
 
-    // 1) Find rows with default PFP or unavatar fallback
-    const { data: rows, error } = await client
+    const client = sb();
+    const { data: profiles, error } = await client
       .from("profiles")
-      .select("*")
-      .or("pfp_url.eq./img/default-pfp.svg,pfp_url.ilike.%unavatar.io/twitter/%");
+      .select("*");
 
     if (error) throw error;
-    if (!rows?.length) return res.json({ ok: true, scanned: 0, refreshed: 0 });
 
-    let refreshed = 0;
-    let kept = 0;
-    let errors = 0;
+    const candidates = profiles.filter(p => isBad(p.pfp_url));
+    let refreshed = 0, kept = 0, errors = 0;
 
-    for (const row of rows) {
-      const handle = clean(row.handle);
-      if (!handle) continue;
+    for (const p of candidates) {
+      let finalUrl = null;
 
-      let pfpUrl = row.pfp_url;
-      let success = false;
-
-      // --- Try Twitter API first ---
+      // 1) Try Twitter API first
       try {
-        const r = await fetch(`${baseUrl}/api/twitter-pfp?u=${encodeURIComponent(handle)}`, { cache: "no-store" });
+        const r = await fetch(
+          `${base}/api/twitter-pfp?u=${encodeURIComponent(p.handle)}`,
+          { cache: "no-store" }
+        );
         if (r.ok) {
           const j = await r.json();
-          if (j?.url) {
-            pfpUrl = j.url;
-            success = true;
-          }
+          const direct = j?.url; // should be pbs.twimg.com
+          if (direct) finalUrl = toWeserv(direct, defaultAbs);
         }
       } catch { /* ignore */ }
 
-      // --- If Twitter failed, try Unavatar ---
-      if (!success) {
-        try {
-          const unav = `https://unavatar.io/twitter/${handle}`;
-          const resp = await fetch(unav);
-          if (resp.ok) {
-            pfpUrl = `${baseUrl}/api/img?u=${encodeURIComponent(unav)}`;
-            success = true;
-          }
-        } catch { /* ignore */ }
+      // 2) Fallback to Unavatar if Twitter didn't give us a URL
+      if (!finalUrl) {
+        const unav = `https://unavatar.io/twitter/${encodeURIComponent(p.handle)}`;
+        finalUrl = toWeserv(unav, defaultAbs);
       }
 
-      // --- Only update if we found a valid working image ---
-      if (success && pfpUrl) {
-        const { error: upErr } = await client
-          .from("profiles")
-          .update({
-            pfp_url: pfpUrl,
-            last_refreshed: new Date().toISOString(),
-          })
-          .eq("handle", handle);
-
-        if (upErr) {
-          errors++;
-        } else {
-          refreshed++;
-        }
-      } else {
+      // If the row already equals what we’d set, skip updating
+      if (String(p.pfp_url) === finalUrl) {
         kept++;
+        continue;
       }
+
+      // 3) Save back
+      const { error: upErr } = await client
+        .from("profiles")
+        .update({
+          pfp_url: finalUrl,
+          last_refreshed: new Date().toISOString(),
+        })
+        .eq("handle", p.handle);
+
+      if (upErr) { errors++; continue; }
+      refreshed++;
     }
 
-    return res.json({
+    res.status(200).json({
       ok: true,
-      scanned: rows.length,
+      scanned: profiles.length,
       refreshed,
       kept,
-      errors,
+      errors
     });
-
   } catch (e) {
-    return res.status(500).json({ error: e.message || "Server error" });
+    res.status(500).json({ error: e.message });
   }
 }
