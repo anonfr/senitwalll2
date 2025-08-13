@@ -1,94 +1,90 @@
-// api/refresh-fallbacks.js
+// /api/refresh-fallbacks.js
 import { sb } from "./_supabase.js";
 
-const CLEAN = s => (s || "").trim();
-const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const clean = s => s?.trim().replace(/^@+/, "").toLowerCase() || "";
 
 export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "POST only" });
+  }
+
   try {
+    const baseUrl = `${req.headers["x-forwarded-proto"] || "https"}://${req.headers.host}`;
     const client = sb();
 
-    // Optional query controls
-    const limit  = Math.min(parseInt(req.query.limit || "40", 10) || 40, 200); // scan at most 200 at once
-    const offset = Math.max(parseInt(req.query.offset || "0", 10) || 0, 0);
-    const throttleMs = Math.max(parseInt(req.query.throttle || "250", 10) || 250, 0);
-
-    // 1) Fetch only rows that *look* bad
-    // - pfp_url contains "fallback.png" (any http/https/proxy)  ✅
-    // - OR pfp_url is your local default svg                     ✅
-    // - OR pfp_url is an unavatar twitter URL (we will try upgrading it; many will succeed)
+    // 1) Find rows with default PFP or unavatar fallback
     const { data: rows, error } = await client
       .from("profiles")
-      .select("id, handle, twitter_url, pfp_url, last_refreshed")
-      .or(
-        [
-          "pfp_url.ilike.%fallback.png%",
-          "pfp_url.eq./img/default-pfp.svg",
-          "pfp_url.ilike.%unavatar.io/twitter/%"
-        ].join(",")
-      )
-      .order("created_at", { ascending: false })
-      .range(offset, offset + limit - 1);
+      .select("*")
+      .or("pfp_url.eq./img/default-pfp.svg,pfp_url.ilike.%unavatar.io/twitter/%");
 
     if (error) throw error;
+    if (!rows?.length) return res.json({ ok: true, scanned: 0, refreshed: 0 });
 
-    const baseUrl = `${req.headers["x-forwarded-proto"] || "https"}://${req.headers.host}`;
-
-    let scanned = rows?.length || 0;
     let refreshed = 0;
     let kept = 0;
-    let errs = 0;
+    let errors = 0;
 
-    for (const row of rows || []) {
-      const handle = CLEAN(row.handle).replace(/^@+/, "").toLowerCase();
-      if (!handle) { kept++; continue; }
+    for (const row of rows) {
+      const handle = clean(row.handle);
+      if (!handle) continue;
 
-      let newPfp = null;
-      let usedTwitter = false;
+      let pfpUrl = row.pfp_url;
+      let success = false;
 
-      // 2) Try Twitter first (best quality)
+      // --- Try Twitter API first ---
       try {
         const r = await fetch(`${baseUrl}/api/twitter-pfp?u=${encodeURIComponent(handle)}`, { cache: "no-store" });
         if (r.ok) {
           const j = await r.json();
           if (j?.url) {
-            newPfp = j.url;
-            usedTwitter = true;
+            pfpUrl = j.url;
+            success = true;
           }
         }
-      } catch (_) {
-        // ignore, we’ll fallback
+      } catch { /* ignore */ }
+
+      // --- If Twitter failed, try Unavatar ---
+      if (!success) {
+        try {
+          const unav = `https://unavatar.io/twitter/${handle}`;
+          const resp = await fetch(unav);
+          if (resp.ok) {
+            pfpUrl = `${baseUrl}/api/img?u=${encodeURIComponent(unav)}`;
+            success = true;
+          }
+        } catch { /* ignore */ }
       }
 
-      // 3) Fallback to unavatar (proxied through our /api/img) if twitter wasn’t used
-      if (!newPfp) {
-        const unav = `https://unavatar.io/twitter/${encodeURIComponent(handle)}`;
-        newPfp = `${baseUrl}/api/img?u=${encodeURIComponent(unav)}`;
-      }
-
-      // If nothing changed, skip update
-      if (newPfp && newPfp !== row.pfp_url) {
+      // --- Only update if we found a valid working image ---
+      if (success && pfpUrl) {
         const { error: upErr } = await client
           .from("profiles")
           .update({
-            pfp_url: newPfp,
+            pfp_url: pfpUrl,
             last_refreshed: new Date().toISOString(),
           })
-          .eq("id", row.id);
+          .eq("handle", handle);
 
-        if (upErr) { errs++; }
-        else { refreshed++; }
+        if (upErr) {
+          errors++;
+        } else {
+          refreshed++;
+        }
       } else {
         kept++;
       }
-
-      // Be gentle with upstream
-      if (throttleMs) await sleep(throttleMs);
     }
 
-    res.setHeader("Cache-Control", "no-store");
-    return res.status(200).json({ ok: true, scanned, refreshed, kept, errors: errs });
+    return res.json({
+      ok: true,
+      scanned: rows.length,
+      refreshed,
+      kept,
+      errors,
+    });
+
   } catch (e) {
-    return res.status(500).json({ ok: false, error: e.message });
+    return res.status(500).json({ error: e.message || "Server error" });
   }
 }
