@@ -112,7 +112,7 @@ async function render(){
 document.getElementById('form')?.addEventListener('submit', async (e)=>{
   e.preventDefault();
   const raw = document.getElementById('handle').value;
-  const handle = String(raw).trim().replace(/^@+/, '');
+
   if(!handle){ msg && (msg.textContent = 'Enter a handle'); return; }
   if(btn){ btn.disabled = true; btn.textContent = 'Submitting…'; }
   msg && (msg.textContent = '');
