@@ -1,88 +1,94 @@
-// /api/refresh-fallbacks.js
+// api/refresh-fallbacks.js
 import { sb } from "./_supabase.js";
 
-function isFallbackUrl(pfp, baseUrl) {
-  if (!pfp) return false;
-
-  const u = String(pfp).trim();
-
-  // Direct unavatar fallback (http or https)
-  if (u === "http://unavatar.io/fallback.png" || u === "https://unavatar.io/fallback.png") {
-    return true;
-  }
-
-  // Default SVG (absolute or relative)
-  if (u === "/img/default-pfp.svg" || u === `${baseUrl}/img/default-pfp.svg`) {
-    return true;
-  }
-
-  // images.weserv.nl that points to the unavatar fallback
-  if (u.includes("images.weserv.nl") && decodeURIComponent(u).includes("unavatar.io/fallback.png")) {
-    return true;
-  }
-
-  // Any /api/img?u=... that points to unavatar fallback or default-pfp
-  try {
-    const parsed = new URL(u, baseUrl);
-    const target = parsed.searchParams.get("u") || "";
-    if (target.includes("unavatar.io/fallback.png") || target.endsWith("/img/default-pfp.svg")) {
-      return true;
-    }
-  } catch {
-    // ignore parse errors
-  }
-
-  return false;
-}
+const CLEAN = s => (s || "").trim();
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 export default async function handler(req, res) {
   try {
-    // --- auth
-    const secret = process.env.REFRESH_SECRET || "";
-    const auth = req.headers.authorization || "";
-    const qsSecret = req.query.secret || "";
-    if (secret && auth !== `Bearer ${secret}` && qsSecret !== secret) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    const baseUrl = `${req.headers["x-forwarded-proto"] || "https"}://${req.headers.host}`;
     const client = sb();
 
-    // Pull a limited number to keep it cheap (adjust limit if you like)
+    // Optional query controls
+    const limit  = Math.min(parseInt(req.query.limit || "40", 10) || 40, 200); // scan at most 200 at once
+    const offset = Math.max(parseInt(req.query.offset || "0", 10) || 0, 0);
+    const throttleMs = Math.max(parseInt(req.query.throttle || "250", 10) || 250, 0);
+
+    // 1) Fetch only rows that *look* bad
+    // - pfp_url contains "fallback.png" (any http/https/proxy)  ✅
+    // - OR pfp_url is your local default svg                     ✅
+    // - OR pfp_url is an unavatar twitter URL (we will try upgrading it; many will succeed)
     const { data: rows, error } = await client
       .from("profiles")
-      .select("id, handle, pfp_url")
-      .limit(1000);
+      .select("id, handle, twitter_url, pfp_url, last_refreshed")
+      .or(
+        [
+          "pfp_url.ilike.%fallback.png%",
+          "pfp_url.eq./img/default-pfp.svg",
+          "pfp_url.ilike.%unavatar.io/twitter/%"
+        ].join(",")
+      )
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
 
     if (error) throw error;
 
-    const candidates = (rows || []).filter(r => isFallbackUrl(r.pfp_url, baseUrl));
-    if (candidates.length === 0) {
-      return res.status(200).json({ ok: true, refreshed: 0, note: "No fallback rows matched." });
-    }
+    const baseUrl = `${req.headers["x-forwarded-proto"] || "https"}://${req.headers.host}`;
 
+    let scanned = rows?.length || 0;
     let refreshed = 0;
-    for (const row of candidates) {
-      try {
-        const r = await fetch(`${baseUrl}/api/twitter-pfp?u=${encodeURIComponent(row.handle)}`, { cache: "no-store" });
-        if (!r.ok) continue;
-        const j = await r.json();
-        const newUrl = j?.url || null;
-        if (!newUrl) continue;
+    let kept = 0;
+    let errs = 0;
 
+    for (const row of rows || []) {
+      const handle = CLEAN(row.handle).replace(/^@+/, "").toLowerCase();
+      if (!handle) { kept++; continue; }
+
+      let newPfp = null;
+      let usedTwitter = false;
+
+      // 2) Try Twitter first (best quality)
+      try {
+        const r = await fetch(`${baseUrl}/api/twitter-pfp?u=${encodeURIComponent(handle)}`, { cache: "no-store" });
+        if (r.ok) {
+          const j = await r.json();
+          if (j?.url) {
+            newPfp = j.url;
+            usedTwitter = true;
+          }
+        }
+      } catch (_) {
+        // ignore, we’ll fallback
+      }
+
+      // 3) Fallback to unavatar (proxied through our /api/img) if twitter wasn’t used
+      if (!newPfp) {
+        const unav = `https://unavatar.io/twitter/${encodeURIComponent(handle)}`;
+        newPfp = `${baseUrl}/api/img?u=${encodeURIComponent(unav)}`;
+      }
+
+      // If nothing changed, skip update
+      if (newPfp && newPfp !== row.pfp_url) {
         const { error: upErr } = await client
           .from("profiles")
-          .update({ pfp_url: newUrl, last_refreshed: new Date().toISOString() })
-          .eq("handle", row.handle);
+          .update({
+            pfp_url: newPfp,
+            last_refreshed: new Date().toISOString(),
+          })
+          .eq("id", row.id);
 
-        if (!upErr) refreshed++;
-      } catch {
-        // ignore individual failures
+        if (upErr) { errs++; }
+        else { refreshed++; }
+      } else {
+        kept++;
       }
+
+      // Be gentle with upstream
+      if (throttleMs) await sleep(throttleMs);
     }
 
-    return res.status(200).json({ ok: true, refreshed, scanned: rows?.length || 0 });
+    res.setHeader("Cache-Control", "no-store");
+    return res.status(200).json({ ok: true, scanned, refreshed, kept, errors: errs });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "server error" });
+    return res.status(500).json({ ok: false, error: e.message });
   }
 }
