@@ -4,6 +4,8 @@ CREATE TABLE public.profiles (
   handle text NOT NULL UNIQUE,
   pfp_url text,
   twitter_url text,
+  website text,
+  last_refreshed timestamp with time zone,
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
