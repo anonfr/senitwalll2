@@ -27,7 +27,7 @@ function cardNode(item){
         loading="lazy"
         decoding="async"
         referrerpolicy="no-referrer"
-        onerror="this.style.display='none'; this.closest('.pfp').style.background='#11172d';"
+        onerror="this.style.display='none'; this.closest('.pfp').style.background='#e0e0e0';"
       >
     </div>
     <div class="caption"><span class="handle">${handleText}</span></div>
@@ -45,7 +45,7 @@ function shuffle(arr){
 }
 function rotate(arr){
   if(!arr.length) return arr;
-  const key='aztec_pfp_wall_rot';
+  const key='sentient_pfp_wall_rot';
   const prev=parseInt(sessionStorage.getItem(key)||'0',10)||0;
   const off=(prev+3)%arr.length;
   sessionStorage.setItem(key, String(off));
@@ -82,7 +82,7 @@ async function render(){
   try {
     let data = await fetchList();
     if (!Array.isArray(data) || !data.length){
-      wall.innerHTML = '<div style="color:#c8cff9;padding:20px">No cards yet. Be the first!</div>';
+      wall.innerHTML = '<div style="padding:20px">No cards yet. Be the first!</div>';
       return;
     }
     data = rotate(shuffle(data));
@@ -150,40 +150,3 @@ document.getElementById('form')?.addEventListener('submit', async (e)=>{
 });
 
 render();
-
-/* -------- Music toggle -------- */
-const music  = document.getElementById('bgMusic');
-const toggle = document.getElementById('musicToggle');
-
-if (music && toggle) {
-  music.volume = 0.45;
-
-  const setUI = (playing) => {
-    toggle.classList.toggle('playing', playing);
-    toggle.setAttribute('aria-pressed', playing ? 'true' : 'false');
-    const label = toggle.querySelector('.text');   // <-- FIX: matches your HTML
-    if (label) label.textContent = playing ? 'Pause Music' : 'Play Music';
-  };
-
-  toggle.addEventListener('click', async () => {
-    try {
-      if (music.paused) {
-        await music.play();
-        setUI(true);
-      } else {
-        music.pause();
-        setUI(false);
-      }
-    } catch (err) {
-      console.warn('Audio play blocked:', err);
-      msg && (msg.textContent = 'Tap again to allow audio.');
-    }
-  });
-
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden && !music.paused) {
-      music.pause();
-      setUI(false);
-    }
-  });
-}

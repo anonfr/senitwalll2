@@ -2,17 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Aztec Wall</title>
+  <title>Sentient Wall</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
-  <meta name="theme-color" content="#121528" />
+  <meta name="theme-color" content="#ffffff" />
   <link rel="stylesheet" href="style.css" />
-  <link rel="icon" type="image/svg+xml"
-    href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="%236f6ce8"/><rect x="18" y="18" width="28" height="28" rx="6" fill="%23ffffff"/></svg>' />
+  <link rel="icon" type="image/jpeg" href="/img/sentient-logo.jpeg" />
 </head>
 <body>
   <div class="wrap">
-    <h1>Aztec Wall</h1>
-    <p class="lead">Submit your X handle. Join Aztec Family Wall</p>
+    <h1>Sentient Wall</h1>
+    <p class="lead">Submit your X handle. Join the Sentient Wall</p>
 
     <form id="form" class="controls" autocomplete="off">
       <input
@@ -30,16 +29,6 @@
       <button id="submitBtn" type="submit">Submit</button>
     </form>
 
-    <!-- Music control (centered under the form) -->
-    <div class="music-row">
-      <button id="musicToggle" type="button" class="music-btn" aria-pressed="false">
-        <span class="note">🎵</span>
-        <span class="text">Play Music</span>
-      </button>
-    </div>
-
-    <!-- Ensure /audio/aztec-theme.mp3 exists at the project root -->
-    <audio id="bgMusic" src="/audio/aztec-theme.mp3" preload="auto" loop></audio>
 
     <div id="msg" class="msg"></div>
     <div class="stage">

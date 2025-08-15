@@ -1,31 +1,26 @@
-:root{
+:root {
   /* Brand */
-  --aztec:#6f6ce8;           
-  --ink:#0f1330;
-  --muted:#636e95;
-
-  /* Dynamic stage palette */
-  --stage-0:#0b0f16;
-  --stage-1:#132242;
-  --stage-2:#1a2450;
-
-  /* UI */
-  --border:#1d2340;
-  --shadow:0 8px 22px rgba(0,0,0,.35);
+  --sentient-bg: #ffffff;
+  --sentient-ink: #000000;
+  --sentient-muted: #555555;
+  --sentient-border: #eeeeee;
+  --sentient-card-bg: #f9f9f9;
+  --sentient-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
-*{ box-sizing:border-box }
 
-/* Page (static background, no animation) */
-html, body{
-  height:100%;
-  margin:0;
-  color:var(--ink);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial;
-  background:
-    radial-gradient(1100px 700px at 0% -20%, var(--stage-1) 0%, var(--stage-0) 45%),
-    radial-gradient(900px 600px at 120% 120%, var(--stage-2) 0%, transparent 60%),
-    var(--stage-0);
-  /* NOTE: no animation/filter on body so children don’t color‑shift */
+* {
+  box-sizing: border-box;
+}
+
+/* Page */
+html,
+body {
+  height: 100%;
+  margin: 0;
+  color: var(--sentient-ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    Helvetica, Arial;
+  background: var(--sentient-bg);
 }
 
 /* Center the heading + subtext */
@@ -33,18 +28,16 @@ html, body{
   max-width: 1200px;
   margin: 28px auto 100px;
   padding: 0 16px;
-  text-align: center; /* Center everything inside wrap */
+  text-align: center;
 }
 
-/* Eye-catching title */
+/* Title */
 h1 {
   margin: 0 0 10px;
-  font-size: 54px; /* Bigger */
+  font-size: 54px;
   font-weight: 900;
-  letter-spacing: .3px;
-  background: linear-gradient(90deg, #8e2de2, #4a00e0); /* Purple gradient */
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  letter-spacing: 0.3px;
+  color: var(--sentient-ink);
 }
 
 /* Subtitle under title */
@@ -52,152 +45,148 @@ h1 {
   margin: 0 0 25px;
   font-size: 18px;
   font-weight: 600;
-  color: #cfd6ff; /* Softer but still visible */
+  color: var(--sentient-muted);
 }
 
 /* Controls */
-.controls{ display:flex; gap:10px; align-items:center; margin:12px 0 10px }
-.controls input{
-  flex:1; padding:12px 14px; border-radius:12px; outline:none;
-  background:#f3f4fb; color:var(--ink);
-  border:1px solid #e6e8f3; font-size:15px;
-}
-.controls button{
-  padding:11px 16px; border-radius:12px; cursor:pointer; border:1px solid transparent;
-  background:linear-gradient(180deg, #7c79ff, var(--aztec));
-  color:#fff; font-weight:800; letter-spacing:.2px; transition:transform .15s ease, filter .15s ease;
-  box-shadow:0 8px 18px rgba(111,108,232,.25);
-}
-.controls button:hover{ filter:brightness(1.06); transform:translateY(-1px) }
-
-.msg{ min-height:18px; font-size:13px; color:#b86; margin:4px 2px }
-
-/* ===== Dynamic container (animation isolated via pseudo‑elements) ===== */
-.stage{
-  position:relative;
-  border-radius:18px;
-  padding:18px;
-  border:1px solid #e9ecf8;
-  overflow:hidden;
-  min-height:60vh;
-  background: var(--stage-0); /* solid base; animation lives on ::before/::after */
+.controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 12px auto 10px;
+  max-width: 420px;
 }
 
-/* Moving gradient layers behind content */
-.stage::before,
-.stage::after{
-  content:"";
-  position:absolute; inset:-12% -12%;
-  z-index:0; pointer-events:none;
-  background: transparent;
-  animation: stageMove 22s ease-in-out infinite alternate;
-}
-.stage::before{
-  background:
-    radial-gradient(1100px 700px at 0% -20%, var(--stage-1) 0%, transparent 55%);
-}
-.stage::after{
-  background:
-    radial-gradient(900px 600px at 120% 120%, var(--stage-2) 0%, transparent 60%);
-  animation-duration: 26s; /* slight desync */
+.controls input {
+  flex: 1;
+  padding: 12px 14px;
+  border-radius: 12px;
+  outline: none;
+  background: #f3f4fb;
+  color: var(--sentient-ink);
+  border: 1px solid #e6e8f3;
+  font-size: 15px;
 }
 
-/* Content sits above the animated layers */
-#wall, .card{ position:relative; z-index:1 }
+.controls button {
+  padding: 11px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: var(--sentient-ink);
+  color: var(--sentient-bg);
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
 
-/* Only move background positions; no hue-rotate anywhere */
-@keyframes stageMove{
-  0%   { background-position: 0% 0%; }
-  50%  { background-position: 12% -8%; }
-  100% { background-position: 24% -14%; }
+.controls button:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+.msg {
+  min-height: 18px;
+  font-size: 13px;
+  color: #d92d20; /* Red for errors */
+  margin: 4px 2px;
+}
+
+/* ===== Dynamic container ===== */
+.stage {
+  position: relative;
+  border-radius: 18px;
+  padding: 18px;
+  border: 1px solid var(--sentient-border);
+  overflow: hidden;
+  min-height: 60vh;
+  background: var(--sentient-bg);
+}
+
+#wall,
+.card {
+  position: relative;
+  z-index: 1;
 }
 
 /* Free‑floating area size */
-#wall{ position:relative; height:calc(70vh); min-height:420px; }
+#wall {
+  position: relative;
+  height: calc(70vh);
+  min-height: 420px;
+}
 
-/* Cards (fixed colors, no bleed from background) */
-.card{
-  position:absolute; display:block; width:118px; border-radius:14px; text-decoration:none; color:#e9ecff;
-  background: linear-gradient(180deg, #11172d, #0c1226); /* fixed gradient */
-  border:1px solid var(--border); overflow:hidden; box-shadow:var(--shadow);
+/* Cards */
+.card {
+  position: absolute;
+  display: block;
+  width: 118px;
+  border-radius: 14px;
+  text-decoration: none;
+  color: var(--sentient-ink);
+  background: var(--sentient-card-bg);
+  border: 1px solid var(--sentient-border);
+  overflow: hidden;
+  box-shadow: var(--sentient-shadow);
   will-change: transform;
 }
-.pfp{ width:100%; aspect-ratio:1/1; background:#0c1226; overflow:hidden }
-.pfp img{ width:100%; height:100%; object-fit:cover; display:block }
-.caption{ padding:6px 8px; background:#0b1124 }
-.handle{
-  display:block; font-weight:900; padding:4px 6px; background:#0f1a39; border:1px solid #1d2952;
-  border-radius:8px; color:#dbe0ff; max-width:100%;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:12px;
+
+.pfp {
+  width: 100%;
+  aspect-ratio: 1/1;
+  background: #e0e0e0;
+  overflow: hidden;
+}
+
+.pfp img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.caption {
+  padding: 6px 8px;
+  background: transparent;
+}
+
+.handle {
+  display: block;
+  font-weight: 900;
+  padding: 4px 6px;
+  background: #f0f0f0;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  color: var(--sentient-ink);
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
 }
 
 /* Builder credit */
-.credit{
-  position:fixed; left:50%; transform:translateX(-50%);
-  bottom:12px; background:#101632; color:#cfd6ff;
-  border:1px solid #22305d; padding:7px 10px; border-radius:999px; font-size:12px; font-weight:800;
-  text-decoration:none; box-shadow:0 6px 18px rgba(0,0,0,.35);
+.credit {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 12px;
+  background: var(--sentient-bg);
+  color: var(--sentient-muted);
+  border: 1px solid var(--sentient-border);
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
 }
 
 /* Motion accessibility */
-@media (prefers-reduced-motion: reduce){
-  .stage::before, .stage::after{ animation:none !important; }
-}
-
-.music-btn-wrapper {
-  display: flex;
-  justify-content: center;
-  margin-top: 12px;
-}
-
-.music-btn .icon {
-  font-size: 16px;
-}
-
-/* Music button row – centered under the form */
-.music-row{
-  display:flex;
-  justify-content:center;
-  margin:12px 0 8px;
-  position:relative;
-  z-index:2;           /* above the stage background */
-}
-
-/* Big purple pill button */
-.music-btn{
-  width: min(560px, 92%);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 12px 20px;
-  border: 0;
-  border-radius: 999px;
-  cursor: pointer;
-  color: #fff;
-  font-weight: 700;
-  font-size: 16px;
-  letter-spacing: .2px;
-  background: linear-gradient(135deg, #6f6ce8, #4d4acb);
-  box-shadow: 0 10px 26px rgba(0,0,0,.35), inset 0 -2px 8px rgba(0,0,0,.15);
-  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
-}
-
-.music-btn:hover{
-  transform: translateY(-2px);
-  box-shadow: 0 14px 32px rgba(0,0,0,.38), inset 0 -2px 8px rgba(0,0,0,.15);
-  filter: brightness(1.05);
-}
-
-.music-btn:active{
-  transform: translateY(0);
-}
-
-/* Match your HTML: <span class="note"> and <span class="text"> */
-.music-btn .note{ font-size:18px; line-height:1; }
-
-/* State when playing */
-.music-btn.playing{
-  background: linear-gradient(135deg, #ff7676, #d93b3b);
+@media (prefers-reduced-motion: reduce) {
+  .stage::before,
+  .stage::after {
+    animation: none !important;
+  }
 }
 
