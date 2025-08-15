@@ -95,6 +95,8 @@ export default async function handler(req, res) {
         {
           handle,
           pfp_url: pfpUrl,
+          twitter_url: `https://twitter.com/${handle}`,
+          website: `https://twitter.com/${handle}`,
           last_refreshed: new Date().toISOString(),
         },
         { onConflict: "handle" }
