@@ -86,10 +86,17 @@ h1 {
 }
 
 .msg {
-  min-height: 18px;
-  font-size: 13px;
-  color: #d92d20; /* Red for errors */
-  margin: 4px 2px;
+  min-height: 1.2em;
+  font-size: 0.9rem;
+  color: #c00;
+}
+
+.wait-notice {
+  font-size: 0.8rem;
+  color: #555;
+  text-align: center;
+  margin-top: -10px;
+  margin-bottom: 15px;
 }
 
 /* ===== Dynamic container ===== */
