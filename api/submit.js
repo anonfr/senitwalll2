@@ -11,7 +11,7 @@ const BANNED_PARTIALS = [
   "elonmusk",
 ].map(s => s.toLowerCase());
 
-const DEFAULT_PFP = "/img/default-pfp.svg";
+const DEFAULT_PFP = "/img/sentient-logo.jpeg";
 const T1 = process.env.TWITTER_BEARER;            // your existing token
 const T2 = process.env.TWITTER_BEARER_TOKEN_2;    // second token (optional)
 
@@ -28,18 +28,28 @@ function isBannedPartial(handle) {
 
 async function fetchTwitterPfp(handle, bearer) {
   if (!bearer) return null;
+  console.log(`Fetching PFP for ${handle} with a bearer token.`);
   const url = `https://api.x.com/2/users/by/username/${encodeURIComponent(handle)}?user.fields=profile_image_url`;
   const r = await fetch(url, {
     headers: { Authorization: `Bearer ${bearer}` },
     cache: "no-store",
   });
-  if (!r.ok) return null;
+
+  if (!r.ok) {
+    const errorText = await r.text();
+    console.error(`Twitter API error for ${handle}: ${r.status}`, errorText);
+    return null;
+  }
 
   const j = await r.json();
   const base = j?.data?.profile_image_url;
-  if (!base) return null;
+  if (!base) {
+    console.log(`Twitter API success, but no profile_image_url for ${handle}.`);
+    return null;
+  }
 
   // upgrade to 400x400 where possible
+  console.log(`Successfully fetched PFP for ${handle} from Twitter.`);
   return base.replace("_normal.", "_400x400.").replace("_normal.", ".");
 }
 
@@ -72,6 +82,7 @@ export default async function handler(req, res) {
 
     // 4) Fallback: Unavatar (JSON) → direct URL
     if (!pfpUrl) {
+      console.log(`Twitter fetch failed for ${handle}, trying Unavatar.`);
       try {
         const u = await fetch(
           `https://unavatar.io/twitter/${encodeURIComponent(handle)}?json`,
@@ -79,9 +90,18 @@ export default async function handler(req, res) {
         );
         if (u.ok) {
           const j = await u.json();
-          if (j?.url) pfpUrl = j.url; // direct image URL
+          if (j?.url) {
+            pfpUrl = j.url;
+            console.log(`Successfully fetched PFP for ${handle} from Unavatar.`);
+          } else {
+            console.log(`Unavatar success, but no URL for ${handle}.`);
+          }
+        } else {
+          console.error(`Unavatar error for ${handle}: ${u.status}`);
         }
-      } catch (_) { /* ignore */ }
+      } catch (err) {
+        console.error(`Unavatar fetch threw an error for ${handle}:`, err.message);
+      }
     }
 
     // 5) Final fallback: local default
